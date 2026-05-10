@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String             @id @default(cuid())
+  emailOrPhone     String             @unique @map("email_or_phone")
+  passwordHash     String             @map("password_hash")
+  displayName      String             @map("display_name")
+  avatarUrl        String?            @map("avatar_url")
+  rating           Int                @default(1200)
+  createdAt        DateTime           @default(now()) @map("created_at")
+  learningProgress LearningProgress[]
+  trainingAttempts TrainingAttempt[]
+  whiteGames       Game[]             @relation("white_games")
+  blackGames       Game[]             @relation("black_games")
+  gameMoves        GameMove[]
+}
+
+model LearningProgress {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  unitId      String    @map("unit_id")
+  lessonId    String    @map("lesson_id")
+  status      String
+  completedAt DateTime? @map("completed_at")
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+model TrainingTask {
+  id               String            @id @default(cuid())
+  type             String
+  title            String
+  boardPosition    Json              @map("board_position")
+  solution         Json
+  difficulty       String
+  activeDate       DateTime          @map("active_date")
+  trainingAttempts TrainingAttempt[]
+}
+
+model TrainingAttempt {
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+  taskId       String    @map("task_id")
+  result       String
+  attemptCount Int       @default(1) @map("attempt_count")
+  completedAt  DateTime? @map("completed_at")
+  user         User      @relation(fields: [userId], references: [id])
+  task         TrainingTask @relation(fields: [taskId], references: [id])
+}
+
+model Game {
+  id            String     @id @default(cuid())
+  roomCode      String     @unique @map("room_code")
+  status        String
+  playerWhiteId String?    @map("player_white_id")
+  playerBlackId String?    @map("player_black_id")
+  winnerId      String?    @map("winner_id")
+  resultReason  String?    @map("result_reason")
+  timeControl   Json       @map("time_control")
+  state         Json
+  startedAt     DateTime?  @map("started_at")
+  endedAt       DateTime?  @map("ended_at")
+  playerWhite   User?      @relation("white_games", fields: [playerWhiteId], references: [id])
+  playerBlack   User?      @relation("black_games", fields: [playerBlackId], references: [id])
+  moves         GameMove[]
+}
+
+model GameMove {
+  id              String   @id @default(cuid())
+  gameId          String   @map("game_id")
+  moveNumber      Int      @map("move_number")
+  playerId        String   @map("player_id")
+  movePayloadJson Json     @map("move_payload_json")
+  boardStateAfter Json     @map("board_state_after")
+  createdAt       DateTime @default(now()) @map("created_at")
+  game            Game     @relation(fields: [gameId], references: [id])
+  player          User     @relation(fields: [playerId], references: [id])
+}
+
