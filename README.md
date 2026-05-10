@@ -24,11 +24,10 @@ infra/
 
 ## MVP Priorities
 
-1. Make the existing Google AI Studio screens real React routes.
-2. Keep the frontend/backend contract explicit in `packages/shared`.
-3. Keep International Draughts rules independent in `packages/draughts-engine`.
-4. Provide a backend skeleton that owns live-game authority.
-5. Provide database and deployment examples for early GitHub collaboration.
+1. Keep the frontend/backend contract explicit in `packages/shared`.
+2. Keep International Draughts rules independent in `packages/draughts-engine`.
+3. Provide a backend skeleton that owns live-game authority.
+4. Provide database and deployment examples for early GitHub collaboration.
 
 ## Quick Start
 
