@@ -10,16 +10,33 @@ const dailyTasks: TrainingTask[] = [
     boardPosition: createInitialGameState(),
     solution: [],
     difficulty: "beginner",
-    activeDate: new Date().toISOString().slice(0, 10)
+    activeDate: new Date().toISOString().slice(0, 10),
+    rewardGems: 8,
+    completedByViewer: false
   }
 ];
 
 export function registerTrainRoutes(app: FastifyInstance) {
-  app.get("/train/daily", async () => ({ ok: true, data: dailyTasks }));
-
-  app.post<{ Params: { taskId: string }; Body: TrainingAttemptRequest }>("/train/tasks/:taskId/attempt", async () => ({
+  app.get("/train/daily", async () => ({
     ok: true,
-    data: { result: "success", attemptCount: 1, completedAt: new Date().toISOString() }
+    data: {
+      activeDate: new Date().toISOString().slice(0, 10),
+      streakDays: 5,
+      completedCount: 0,
+      totalCount: dailyTasks.length,
+      tasks: dailyTasks
+    }
+  }));
+
+  app.post<{ Params: { taskId: string }; Body: TrainingAttemptRequest }>("/train/tasks/:taskId/attempt", async (request) => ({
+    ok: true,
+    data: {
+      taskId: request.params.taskId,
+      result: "success",
+      attemptCount: 1,
+      correctMoveCount: 1,
+      completedAt: new Date().toISOString(),
+      awardedGems: 8
+    }
   }));
 }
-

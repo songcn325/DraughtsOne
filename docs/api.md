@@ -18,7 +18,8 @@ Request:
 
 ```json
 {
-  "emailOrPhone": "player@example.com",
+  "username": "playerone",
+  "email": "player@example.com",
   "password": "password",
   "displayName": "Player One"
 }
@@ -36,7 +37,7 @@ Request:
 
 ```json
 {
-  "emailOrPhone": "player@example.com",
+  "username": "playerone",
   "password": "password"
 }
 ```
@@ -45,6 +46,56 @@ Response data:
 
 ```ts
 AuthSession
+```
+
+### `POST /auth/verification-code/send`
+
+Used for email verification now and SMS verification later.
+
+Request:
+
+```json
+{
+  "channel": "email",
+  "target": "player@example.com",
+  "purpose": "reset_password"
+}
+```
+
+### `POST /auth/verification-code/login`
+
+Future extension for email or SMS code login. SMS should remain disabled in the first MVP unless the team accepts message fees.
+
+Request:
+
+```json
+{
+  "channel": "sms",
+  "target": "+8613800000000",
+  "code": "123456"
+}
+```
+
+### `POST /auth/password-reset/request`
+
+Request:
+
+```json
+{
+  "username": "playerone"
+}
+```
+
+### `POST /auth/password-reset/confirm`
+
+Request:
+
+```json
+{
+  "username": "playerone",
+  "code": "123456",
+  "newPassword": "new-password"
+}
 ```
 
 ## Current User
@@ -170,4 +221,3 @@ Response data:
 ```ts
 Game
 ```
-

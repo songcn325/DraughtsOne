@@ -9,7 +9,9 @@ export const mockTrainingTasks: TrainingTask[] = [
     boardPosition: createInitialGameState(),
     solution: [{ from: { row: 6, col: 1 }, to: { row: 5, col: 0 } }],
     difficulty: "beginner",
-    activeDate: new Date().toISOString().slice(0, 10)
+    activeDate: new Date().toISOString().slice(0, 10),
+    rewardGems: 8,
+    completedByViewer: false
   },
   {
     id: "daily-2",
@@ -18,7 +20,8 @@ export const mockTrainingTasks: TrainingTask[] = [
     boardPosition: createInitialGameState(),
     solution: [],
     difficulty: "intermediate",
-    activeDate: new Date().toISOString().slice(0, 10)
+    activeDate: new Date().toISOString().slice(0, 10),
+    rewardGems: 12,
+    completedByViewer: false
   }
 ];
-

@@ -9,7 +9,11 @@ datasource db {
 
 model User {
   id               String             @id @default(cuid())
-  emailOrPhone     String             @unique @map("email_or_phone")
+  username         String             @unique
+  email            String?            @unique
+  phoneNumber      String?            @unique @map("phone_number")
+  emailVerified    Boolean            @default(false) @map("email_verified")
+  phoneVerified    Boolean            @default(false) @map("phone_verified")
   passwordHash     String             @map("password_hash")
   displayName      String             @map("display_name")
   avatarUrl        String?            @map("avatar_url")
@@ -82,4 +86,3 @@ model GameMove {
   game            Game     @relation(fields: [gameId], references: [id])
   player          User     @relation(fields: [playerId], references: [id])
 }
-

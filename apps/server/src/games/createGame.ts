@@ -7,9 +7,10 @@ export function createGame(request: CreateGameRequest, playerId = "demo-user"): 
     id,
     roomCode: id.slice(0, 6).toUpperCase(),
     status: "waiting",
+    opponentType: request.opponentType,
+    visibility: request.visibility,
     playerWhiteId: playerId,
     state: createInitialGameState(),
     timeControl: request.timeControl ?? { initialSeconds: 600, incrementSeconds: 0 }
   };
 }
-

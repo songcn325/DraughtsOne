@@ -19,7 +19,7 @@ export function registerRealtimeHandlers(io: Server<SocketClientEvents, SocketSe
 
       const updated = await roomStore.updateRoom({ ...game, playerBlackId: "socket-player", status: "ready" });
       socket.join(updated.id);
-      io.to(updated.id).emit("game:joined", { game: updated });
+      io.to(updated.id).emit("game:joined", { game: updated, assignedColor: "black" });
     });
 
     socket.on("game:ready", async ({ gameId }) => {
@@ -63,4 +63,3 @@ export function registerRealtimeHandlers(io: Server<SocketClientEvents, SocketSe
     });
   });
 }
-

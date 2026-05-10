@@ -3,7 +3,10 @@ import type { PatchMeRequest, User } from "@draughtsone/shared";
 
 let demoUser: User = {
   id: "demo-user",
-  emailOrPhone: "demo@draughtsone.app",
+  username: "demo",
+  email: "demo@draughtsone.app",
+  emailVerified: true,
+  phoneVerified: false,
   displayName: "Demo Player",
   rating: 1200,
   createdAt: new Date().toISOString()
@@ -17,4 +20,3 @@ export function registerUserRoutes(app: FastifyInstance) {
     return { ok: true, data: demoUser };
   });
 }
-
