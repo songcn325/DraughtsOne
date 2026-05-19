@@ -41,6 +41,7 @@ export function GameBoardPage() {
   const [ruleReminderOpen, setRuleReminderOpen] = useState(false);
   const [captureReminderOpen, setCaptureReminderOpen] = useState(false);
   const [learnerInfoOpen, setLearnerInfoOpen] = useState(false);
+  const [winnerDialogOpen, setWinnerDialogOpen] = useState(false);
   const [learnerMode, setLearnerMode] = useState(true);
   const legalMoves = useMemo(() => generateLegalMoves(state), [state]);
   const selectedMoves = selected ? legalMoves.filter((move) => samePoint(move.from, selected)) : [];
@@ -58,6 +59,7 @@ export function GameBoardPage() {
           const winner = state.turn === "white" ? "black" : "white";
           setState((currentState) => ({ ...currentState, winner, resultReason: "timeout" }));
           setMessage(`${colorLabel(state.turn)} ran out of time. ${colorLabel(winner)} wins.`);
+          setWinnerDialogOpen(true);
         }
         return next;
       });
@@ -100,6 +102,7 @@ export function GameBoardPage() {
     setState(nextState);
     setHistory((moves) => [...moves, move]);
     setSelected(undefined);
+    if (nextState.winner) setWinnerDialogOpen(true);
     setMessage(nextState.winner ? `${colorLabel(nextState.winner)} wins by ${nextState.resultReason}.` : `${colorLabel(nextState.turn)} to move.`);
   }
 
@@ -112,6 +115,7 @@ export function GameBoardPage() {
     setRuleReminderOpen(false);
     setCaptureReminderOpen(false);
     setLearnerInfoOpen(false);
+    setWinnerDialogOpen(false);
     setMessage("White to move. Select a piece.");
   }
 
@@ -120,6 +124,7 @@ export function GameBoardPage() {
     setState((current) => ({ ...current, winner, resultReason: "resignation" }));
     setSelected(undefined);
     setResignConfirmOpen(false);
+    setWinnerDialogOpen(true);
     setMessage(`${colorLabel(state.turn)} resigned. ${colorLabel(winner)} wins.`);
   }
 
@@ -190,6 +195,19 @@ export function GameBoardPage() {
             <div className="mt-6 grid grid-cols-2 gap-3">
               <TactileButton tone="surface" onClick={() => setResignConfirmOpen(false)}>Cancel</TactileButton>
               <TactileButton tone="danger" onClick={confirmResign}>Confirm</TactileButton>
+            </div>
+          </section>
+        </div>
+      )}
+      {winnerDialogOpen && state.winner && (
+        <div className="fixed inset-0 z-[70] grid place-items-end bg-black/25 p-4 sm:place-items-center">
+          <section className="w-full max-w-sm rounded-lg bg-surface p-6 shadow-[0_24px_80px_rgba(45,47,47,0.2)]">
+            <p className="text-sm font-black uppercase text-primary">Game over</p>
+            <h2 className="mt-2 text-3xl font-black">{colorLabel(state.winner)} side wins!</h2>
+            <p className="mt-3 font-semibold text-on-surface-variant">The final board is still visible behind this window.</p>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <TactileButton tone="primary" onClick={resetGame}>New game</TactileButton>
+              <TactileButton tone="surface" onClick={() => setWinnerDialogOpen(false)}>Close</TactileButton>
             </div>
           </section>
         </div>
