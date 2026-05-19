@@ -43,7 +43,10 @@ export function generateLegalMoves(state: GameState): LegalMove[] {
     }
   });
 
-  return captures.length > 0 ? captures : moves;
+  if (captures.length === 0) return moves;
+
+  const maxCaptureCount = Math.max(...captures.map((move) => move.captures.length));
+  return captures.filter((move) => move.captures.length === maxCaptureCount);
 }
 
 export function validateMove(state: GameState, payload: MovePayload): MoveValidation {
@@ -128,12 +131,38 @@ function generateManMoves(state: GameState, from: BoardPoint): LegalMove[] {
     if (isPlayableDestination(state.board, to)) moves.push({ from, to, captures: [], promotes: promotes(piece.color, to) });
   }
 
+  moves.push(...generateManCaptureMoves(state.board, from, from, piece.color, []));
+
+  return moves;
+}
+
+function generateManCaptureMoves(board: BoardSquare[][], origin: BoardPoint, from: BoardPoint, color: PlayerColor, path: BoardPoint[]): LegalMove[] {
+  const moves: LegalMove[] = [];
+  const captureDirections = [
+    { row: -1, col: -1 },
+    { row: -1, col: 1 },
+    { row: 1, col: -1 },
+    { row: 1, col: 1 }
+  ];
+
   for (const direction of captureDirections) {
     const jumped = { row: from.row + direction.row, col: from.col + direction.col };
     const to = { row: from.row + direction.row * 2, col: from.col + direction.col * 2 };
-    const jumpedPiece = getSquare(state.board, jumped);
-    if (jumpedPiece && jumpedPiece.color !== piece.color && isPlayableDestination(state.board, to)) {
-      moves.push({ from, to, captures: [jumped], path: [from, to], promotes: promotes(piece.color, to) });
+    const jumpedPiece = getSquare(board, jumped);
+    if (!jumpedPiece || jumpedPiece.color === color || !isPlayableDestination(board, to)) continue;
+
+    const nextBoard = cloneBoard(board);
+    const movingPiece = nextBoard[from.row][from.col];
+    nextBoard[from.row][from.col] = null;
+    nextBoard[jumped.row][jumped.col] = null;
+    nextBoard[to.row][to.col] = movingPiece;
+
+    const nextPath = path.length === 0 ? [origin, to] : [...path, to];
+    const followUpMoves = generateManCaptureMoves(nextBoard, origin, to, color, nextPath);
+    if (followUpMoves.length > 0) {
+      moves.push(...followUpMoves.map((move) => ({ ...move, captures: [jumped, ...move.captures] })));
+    } else {
+      moves.push({ from: origin, to, captures: [jumped], path: nextPath, promotes: promotes(color, to) });
     }
   }
 
@@ -213,4 +242,3 @@ function forEachSquare(board: BoardSquare[][], callback: (piece: BoardSquare, po
     for (let col = 0; col < BOARD_SIZE; col += 1) callback(board[row][col], { row, col });
   }
 }
-

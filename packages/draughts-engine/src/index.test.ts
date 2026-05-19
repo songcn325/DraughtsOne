@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { BoardSquare, GameState } from "@draughtsone/shared";
 import { applyMove, createInitialGameState, generateLegalMoves, validateMove } from "./index";
 
 describe("draughts engine MVP", () => {
@@ -27,5 +28,34 @@ describe("draughts engine MVP", () => {
     expect(next.turn).toBe("black");
     expect(next.board[5][0]?.color).toBe("white");
   });
-});
 
+  it("generates the longest available multi-capture for a man", () => {
+    const board: BoardSquare[][] = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => null));
+    board[5][8] = { id: "white-man", color: "white", kind: "man" };
+    board[4][7] = { id: "black-1", color: "black", kind: "man" };
+    board[2][5] = { id: "black-2", color: "black", kind: "man" };
+
+    const state: GameState = {
+      board,
+      turn: "white",
+      ply: 0,
+      mandatoryCapture: true
+    };
+
+    const moves = generateLegalMoves(state);
+    expect(moves).toHaveLength(1);
+    expect(moves[0]).toMatchObject({
+      from: { row: 5, col: 8 },
+      to: { row: 1, col: 4 },
+      captures: [
+        { row: 4, col: 7 },
+        { row: 2, col: 5 }
+      ],
+      path: [
+        { row: 5, col: 8 },
+        { row: 3, col: 6 },
+        { row: 1, col: 4 }
+      ]
+    });
+  });
+});

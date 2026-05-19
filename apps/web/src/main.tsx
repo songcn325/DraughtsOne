@@ -17,7 +17,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <Routes>
         <Route element={<AppShell />}>
-          <Route index element={<Navigate to="/learn" replace />} />
+          <Route index element={<Navigate to="/play" replace />} />
           <Route path="/learn" element={<LearnPage />} />
           <Route path="/train" element={<TrainPage />} />
           <Route path="/play" element={<PlayHallPage />} />
@@ -31,4 +31,3 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </BrowserRouter>
   </React.StrictMode>
 );
-

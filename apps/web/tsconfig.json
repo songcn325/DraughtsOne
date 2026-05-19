@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
+    "noEmit": true,
     "types": ["vite/client"],
     "baseUrl": ".",
     "paths": {
@@ -10,4 +11,3 @@
   },
   "include": ["src", "vite.config.ts", "tailwind.config.ts"]
 }
-
