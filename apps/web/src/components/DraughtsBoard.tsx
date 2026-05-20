@@ -43,8 +43,8 @@ export function DraughtsBoard({ state, selected, legalTargets = [], latestMove, 
                   >
                     <div className="relative h-3/5 w-3/5 rounded-full border border-white/40">
                       {piece.kind === "king" && (
-                        <span className="absolute left-1/2 top-1/2 grid h-7 w-7 max-w-[82%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/92 shadow-[0_1px_4px_rgba(0,0,0,0.16)]">
-                          <span className="king-crown" aria-hidden="true" />
+                        <span className="absolute left-1/2 top-1/2 grid h-[82%] w-[82%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/92 shadow-[0_1px_4px_rgba(0,0,0,0.16)]">
+                          <span className="material-symbols-outlined fill king-symbol text-secondary-fixed" aria-hidden="true">crown</span>
                         </span>
                       )}
                     </div>
