@@ -41,8 +41,12 @@ export function DraughtsBoard({ state, selected, legalTargets = [], latestMove, 
                         : "bg-gradient-to-b from-[#4a4a4a] to-[#050505] shadow-[inset_0_-4px_8px_rgba(0,0,0,0.7),0_4px_6px_rgba(0,0,0,0.28)]"
                     }`}
                   >
-                    <div className="grid h-3/5 w-3/5 place-items-center rounded-full border border-white/40">
-                      {piece.kind === "king" && <span className="material-symbols-outlined fill grid h-full w-full place-items-center text-[18px] leading-none text-secondary-fixed">crown</span>}
+                    <div className="relative h-3/5 w-3/5 rounded-full border border-white/40">
+                      {piece.kind === "king" && (
+                        <span className="absolute left-1/2 top-1/2 grid h-7 w-7 max-w-[82%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/92 shadow-[0_1px_4px_rgba(0,0,0,0.16)]">
+                          <span className="king-crown" aria-hidden="true" />
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
