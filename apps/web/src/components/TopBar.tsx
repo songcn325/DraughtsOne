@@ -9,10 +9,9 @@ export function TopBar() {
           <span className="text-2xl font-black tracking-tight">DraughtsOne</span>
         </Link>
         <Link to="/profile" className="rounded-full bg-surface-container-lowest px-4 py-2 text-sm font-extrabold text-primary shadow-[0_4px_0_#dbdddd]">
-          5 streak · 120 gems
+          My Account
         </Link>
       </div>
     </header>
   );
 }
-
