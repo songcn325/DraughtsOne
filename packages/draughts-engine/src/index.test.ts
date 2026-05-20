@@ -58,4 +58,40 @@ describe("draughts engine MVP", () => {
       ]
     });
   });
+
+  it("requires the king route when it captures more pieces than a man", () => {
+    const board: BoardSquare[][] = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => null));
+    board[5][0] = { id: "black-man", color: "black", kind: "man" };
+    board[4][1] = { id: "white-for-man", color: "white", kind: "man" };
+    board[7][0] = { id: "black-king", color: "black", kind: "king" };
+    board[5][2] = { id: "white-1", color: "white", kind: "man" };
+    board[3][4] = { id: "white-2", color: "white", kind: "man" };
+
+    const state: GameState = {
+      board,
+      turn: "black",
+      ply: 0,
+      mandatoryCapture: true
+    };
+
+    const moves = generateLegalMoves(state);
+    expect(moves.every((move) => move.from.row === 7 && move.from.col === 0)).toBe(true);
+    expect(moves.every((move) => move.captures.length === 2)).toBe(true);
+  });
+
+  it("offers every legal landing square for a flying king capture", () => {
+    const board: BoardSquare[][] = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => null));
+    board[7][0] = { id: "black-king", color: "black", kind: "king" };
+    board[5][2] = { id: "white-1", color: "white", kind: "man" };
+
+    const state: GameState = {
+      board,
+      turn: "black",
+      ply: 0,
+      mandatoryCapture: true
+    };
+
+    const landings = generateLegalMoves(state).map((move) => `${move.to.row},${move.to.col}`);
+    expect(landings).toEqual(expect.arrayContaining(["4,3", "3,4", "2,5", "1,6", "0,7"]));
+  });
 });

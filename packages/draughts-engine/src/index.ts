@@ -10,6 +10,12 @@ export type MoveValidation =
   | { ok: false; code: "NO_PIECE" | "WRONG_TURN" | "ILLEGAL_MOVE" | "MANDATORY_CAPTURE"; message: string };
 
 const BOARD_SIZE = 10;
+const DIAGONAL_DIRECTIONS = [
+  { row: -1, col: -1 },
+  { row: -1, col: 1 },
+  { row: 1, col: -1 },
+  { row: 1, col: 1 }
+];
 
 export function createInitialGameState(): GameState {
   const board: BoardSquare[][] = Array.from({ length: BOARD_SIZE }, () => Array.from({ length: BOARD_SIZE }, () => null));
@@ -138,14 +144,8 @@ function generateManMoves(state: GameState, from: BoardPoint): LegalMove[] {
 
 function generateManCaptureMoves(board: BoardSquare[][], origin: BoardPoint, from: BoardPoint, color: PlayerColor, path: BoardPoint[]): LegalMove[] {
   const moves: LegalMove[] = [];
-  const captureDirections = [
-    { row: -1, col: -1 },
-    { row: -1, col: 1 },
-    { row: 1, col: -1 },
-    { row: 1, col: 1 }
-  ];
 
-  for (const direction of captureDirections) {
+  for (const direction of DIAGONAL_DIRECTIONS) {
     const jumped = { row: from.row + direction.row, col: from.col + direction.col };
     const to = { row: from.row + direction.row * 2, col: from.col + direction.col * 2 };
     const jumpedPiece = getSquare(board, jumped);
@@ -173,26 +173,60 @@ function generateKingMoves(state: GameState, from: BoardPoint): LegalMove[] {
   const piece = getSquare(state.board, from);
   if (!piece) return [];
 
+  return [...generateKingQuietMoves(state.board, from), ...generateKingCaptureMoves(state.board, from, from, piece.color, [])];
+}
+
+function generateKingQuietMoves(board: BoardSquare[][], from: BoardPoint): LegalMove[] {
   const moves: LegalMove[] = [];
-  for (const direction of [
-    { row: -1, col: -1 },
-    { row: -1, col: 1 },
-    { row: 1, col: -1 },
-    { row: 1, col: 1 }
-  ]) {
-    let seenOpponent: BoardPoint | undefined;
+  for (const direction of DIAGONAL_DIRECTIONS) {
     for (let step = 1; step < BOARD_SIZE; step += 1) {
       const to = { row: from.row + direction.row * step, col: from.col + direction.col * step };
       if (!isInside(to)) break;
-      const occupant = getSquare(state.board, to);
-      if (!occupant) {
-        moves.push({ from, to, captures: seenOpponent ? [seenOpponent] : [], path: [from, to], promotes: false });
-        continue;
-      }
-      if (occupant.color === piece.color || seenOpponent) break;
-      seenOpponent = to;
+      const occupant = getSquare(board, to);
+      if (occupant) break;
+      moves.push({ from, to, captures: [], path: [from, to], promotes: false });
     }
   }
+  return moves;
+}
+
+function generateKingCaptureMoves(board: BoardSquare[][], origin: BoardPoint, from: BoardPoint, color: PlayerColor, path: BoardPoint[]): LegalMove[] {
+  const moves: LegalMove[] = [];
+
+  for (const direction of DIAGONAL_DIRECTIONS) {
+    let captured: BoardPoint | undefined;
+
+    for (let step = 1; step < BOARD_SIZE; step += 1) {
+      const point = { row: from.row + direction.row * step, col: from.col + direction.col * step };
+      if (!isInside(point)) break;
+
+      const occupant = getSquare(board, point);
+      if (!captured) {
+        if (!occupant) continue;
+        if (occupant.color === color) break;
+        captured = point;
+        continue;
+      }
+
+      if (occupant) break;
+      const capturedPoint = captured;
+
+      const nextBoard = cloneBoard(board);
+      const movingPiece = nextBoard[from.row][from.col];
+      nextBoard[from.row][from.col] = null;
+      nextBoard[capturedPoint.row][capturedPoint.col] = null;
+      nextBoard[point.row][point.col] = movingPiece;
+
+      const nextPath = path.length === 0 ? [origin, point] : [...path, point];
+      const followUpMoves = generateKingCaptureMoves(nextBoard, origin, point, color, nextPath);
+      if (followUpMoves.length > 0) {
+        moves.push(...followUpMoves.map((move) => ({ ...move, captures: [capturedPoint, ...move.captures] })));
+      } else {
+        moves.push({ from: origin, to: point, captures: [capturedPoint], path: nextPath, promotes: false });
+      }
+    }
+  }
+
   return moves;
 }
 
