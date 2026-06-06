@@ -1,4 +1,4 @@
-import type { ApiEndpoint, EmptyRequest, ID, ISODateTime } from "../common";
+import type { ApiEndpoint, EmptyRequest, ID, ISODateTime } from "../common.js";
 
 export type LessonNodeStatus = "locked" | "available" | "completed";
 

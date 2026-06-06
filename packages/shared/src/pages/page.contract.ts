@@ -1,4 +1,4 @@
-import type { AiProfileAnalysisView } from "../api/ai-analysis.contract";
+import type { AiProfileAnalysisView } from "../api/ai-analysis.contract.js";
 import type {
   LoginRequest,
   RegisterRequest,
@@ -6,12 +6,12 @@ import type {
   ResetPasswordRequest,
   SendVerificationCodeRequest,
   VerificationCodeLoginRequest
-} from "../api/auth.contract";
-import type { GameDetailView, GameHallView } from "../api/games.contract";
-import type { LearnPath } from "../api/learn.contract";
-import type { DailyTrainingView } from "../api/training.contract";
-import type { UserProfileView } from "../api/users.contract";
-import type { ErrorPageView } from "../errors";
+} from "../api/auth.contract.js";
+import type { GameDetailView, GameHallView } from "../api/games.contract.js";
+import type { LearnPath } from "../api/learn.contract.js";
+import type { DailyTrainingView } from "../api/training.contract.js";
+import type { UserProfileView } from "../api/users.contract.js";
+import type { ErrorPageView } from "../errors.js";
 
 export type PageLoadState = "idle" | "loading" | "ready" | "error";
 

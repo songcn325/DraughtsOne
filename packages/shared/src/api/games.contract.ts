@@ -1,7 +1,7 @@
-import type { ApiEndpoint, EmptyRequest, ID, ISODateTime, PaginatedResponse } from "../common";
-import type { User } from "./auth.contract";
-import type { GameState, GameStatus, PlayerColor, ResultReason } from "../game/game-state.contract";
-import type { GameMove, MovePayload } from "../game/moves.contract";
+import type { ApiEndpoint, EmptyRequest, ID, ISODateTime, PaginatedResponse } from "../common.js";
+import type { User } from "./auth.contract.js";
+import type { GameState, GameStatus, PlayerColor, ResultReason } from "../game/game-state.contract.js";
+import type { GameMove, MovePayload } from "../game/moves.contract.js";
 
 export type OpponentType = "human" | "computer";
 export type GameVisibility = "private" | "quick_match";

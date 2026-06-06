@@ -1,4 +1,4 @@
-import type { ID, ISODateTime } from "../common";
+import type { ID, ISODateTime } from "../common.js";
 
 export type PlayerColor = "white" | "black";
 export type PieceKind = "man" | "king";

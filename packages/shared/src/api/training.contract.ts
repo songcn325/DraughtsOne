@@ -1,6 +1,6 @@
-import type { ApiEndpoint, EmptyRequest, ID, ISODate, ISODateTime } from "../common";
-import type { GameState } from "../game/game-state.contract";
-import type { MovePayload } from "../game/moves.contract";
+import type { ApiEndpoint, EmptyRequest, ID, ISODate, ISODateTime } from "../common.js";
+import type { GameState } from "../game/game-state.contract.js";
+import type { MovePayload } from "../game/moves.contract.js";
 
 export type TrainingTaskType = "puzzle" | "drill" | "endgame";
 export type TrainingDifficulty = "beginner" | "intermediate" | "advanced";

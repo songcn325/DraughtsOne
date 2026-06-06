@@ -1,0 +1,21 @@
+[Unit]
+Description=DraughtsOne Node.js API and realtime server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/DraughtsOne-main
+Environment=NODE_ENV=production
+EnvironmentFile=/home/ubuntu/DraughtsOne-main/.env.production
+ExecStart=/usr/bin/node apps/server/dist/index.js
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+KillSignal=SIGINT
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

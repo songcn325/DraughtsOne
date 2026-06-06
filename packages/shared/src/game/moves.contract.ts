@@ -1,5 +1,5 @@
-import type { ID, ISODateTime } from "../common";
-import type { BoardPoint, GameState } from "./game-state.contract";
+import type { ID, ISODateTime } from "../common.js";
+import type { BoardPoint, GameState } from "./game-state.contract.js";
 
 export type MovePayload = {
   from: BoardPoint;

@@ -1,4 +1,4 @@
-import type { ApiError } from "../errors";
+import type { ApiError } from "../errors.js";
 import type {
   CreateGameRequest,
   CreateGameResult,
@@ -6,9 +6,9 @@ import type {
   JoinGameRequest,
   JoinGameResult,
   SubmitMoveResult
-} from "../api/games.contract";
-import type { ID } from "../common";
-import type { MovePayload } from "../game/moves.contract";
+} from "../api/games.contract.js";
+import type { ID } from "../common.js";
+import type { MovePayload } from "../game/moves.contract.js";
 
 export const SOCKET_EVENTS = {
   client: {

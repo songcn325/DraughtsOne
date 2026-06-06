@@ -21,7 +21,8 @@ export const REST_ROUTES = {
     attemptTask: "/train/tasks/:taskId/attempt"
   },
   aiAnalysis: {
-    profile: "/ai/profile"
+    profile: "/ai/profile",
+    bestMove: "/ai/best-move"
   },
   games: {
     hall: "/games/hall",

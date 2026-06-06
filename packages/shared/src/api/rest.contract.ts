@@ -1,9 +1,9 @@
-import type { AiAnalysisApiContract } from "./ai-analysis.contract";
-import type { AuthApiContract } from "./auth.contract";
-import type { GamesApiContract } from "./games.contract";
-import type { LearnApiContract } from "./learn.contract";
-import type { TrainingApiContract } from "./training.contract";
-import type { UsersApiContract } from "./users.contract";
+import type { AiAnalysisApiContract } from "./ai-analysis.contract.js";
+import type { AuthApiContract } from "./auth.contract.js";
+import type { GamesApiContract } from "./games.contract.js";
+import type { LearnApiContract } from "./learn.contract.js";
+import type { TrainingApiContract } from "./training.contract.js";
+import type { UsersApiContract } from "./users.contract.js";
 
 export type RestApiContract = AuthApiContract &
   UsersApiContract &

@@ -1,5 +1,5 @@
-import type { ApiEndpoint, EmptyRequest } from "../common";
-import type { User } from "./auth.contract";
+import type { ApiEndpoint, EmptyRequest } from "../common.js";
+import type { User } from "./auth.contract.js";
 
 export type PatchMeRequest = Partial<Pick<User, "displayName" | "avatarUrl">>;
 

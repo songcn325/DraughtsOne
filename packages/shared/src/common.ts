@@ -1,4 +1,4 @@
-import type { ApiError } from "./errors";
+import type { ApiError } from "./errors.js";
 
 export type ID = string;
 export type ISODateTime = string;
