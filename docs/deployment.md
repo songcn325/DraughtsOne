@@ -129,6 +129,7 @@ live rooms. Schedule deployments when no match is in progress.
 - `JWT_SECRET`
 - `WEB_ORIGIN`
 - `PORT`
+- `HOST`
 - `SCAN_ENGINE_PATH`
 - `SCAN_MAX_PROCESSES`
 - `SCAN_TIMEOUT_MS`
