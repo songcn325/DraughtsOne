@@ -330,7 +330,9 @@ export function GameBoardPage() {
           <div className="mt-4 flex items-center justify-between gap-4 border-t border-outline-variant/30 pt-4">
             <div>
               <p className="font-black">Best-move arrow</p>
-              <p className="text-sm font-semibold text-on-surface-variant">Show Scan’s recommendation on the board.</p>
+              <p className="text-sm font-semibold text-on-surface-variant">
+                {analysis ? "Show Scan’s recommendation on the board." : "Click Analyze first to calculate and show a recommendation."}
+              </p>
             </div>
             <button
               type="button"

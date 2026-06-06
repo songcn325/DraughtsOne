@@ -58,8 +58,8 @@ export function DraughtsBoard({ state, selected, legalTargets = [], latestMove, 
         {bestMove && (
           <svg className="pointer-events-none absolute inset-0 z-20 h-full w-full" viewBox="0 0 100 100" aria-hidden="true">
             <defs>
-              <marker id="best-move-arrowhead" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto">
-                <path d="M0,0 L7,3.5 L0,7 Z" fill="#ffcb2a" />
+              <marker id="best-move-arrowhead" markerWidth="4" markerHeight="4" refX="3.2" refY="2" orient="auto">
+                <path d="M0,0 L4,2 L0,4 Z" fill="#ffcb2a" />
               </marker>
             </defs>
             <line
@@ -68,7 +68,7 @@ export function DraughtsBoard({ state, selected, legalTargets = [], latestMove, 
               x2={bestMove.to.col * 10 + 5}
               y2={bestMove.to.row * 10 + 5}
               stroke="#ffcb2a"
-              strokeWidth="2.2"
+              strokeWidth="1.5"
               strokeLinecap="round"
               markerEnd="url(#best-move-arrowhead)"
               className="drop-shadow-[0_2px_2px_rgba(66,50,0,0.65)]"
