@@ -68,13 +68,15 @@ export function parseHubMove(notation: string, ponder?: string): AiBestMoveView 
     throw new ScanEngineError(`Scan returned an invalid move: ${notation}`, "PROTOCOL_ERROR");
   }
 
-  const path = squareNumbers.map(squareToPoint);
+  const from = squareToPoint(squareNumbers[0]);
+  const to = squareToPoint(squareNumbers[1]);
   return {
     notation,
-    from: path[0],
-    to: path[path.length - 1],
-    path,
-    ponder
+    from,
+    to,
+    path: [from, to],
+    ponder,
+    principalVariation: []
   };
 }
 
@@ -87,6 +89,7 @@ function runScan(executable: string, position: string, moveTimeMs: number, timeo
     const output = createInterface({ input: child.stdout });
     let stderr = "";
     let settled = false;
+    let latestInfo: Partial<AiBestMoveView> = {};
 
     const finish = (error?: Error, result?: AiBestMoveView) => {
       if (settled) return;
@@ -128,7 +131,11 @@ function runScan(executable: string, position: string, moveTimeMs: number, timeo
       if (trimmed === "ready") {
         child.stdin.write(`pos pos=${position}\n`);
         child.stdin.write(`level move-time=${Math.max(1, Math.ceil(moveTimeMs / 1_000))}\n`);
-        child.stdin.write("go think\n");
+        child.stdin.write("go analyze\n");
+        return;
+      }
+      if (trimmed.startsWith("info ")) {
+        latestInfo = parseHubInfo(trimmed);
         return;
       }
       if (!trimmed.startsWith("done ")) return;
@@ -139,11 +146,24 @@ function runScan(executable: string, position: string, moveTimeMs: number, timeo
         finish(new ScanEngineError(`Scan returned an unrecognized result: ${trimmed}`, "PROTOCOL_ERROR"));
         return;
       }
-      finish(undefined, parseHubMove(move, ponder));
+      finish(undefined, { ...parseHubMove(move, ponder), ...latestInfo });
     });
 
     child.stdin.write("hub\n");
   });
+}
+
+export function parseHubInfo(line: string): Partial<AiBestMoveView> {
+  const principalVariation = line.match(/\bpv=(?:"([^"]*)"|(\S+))/)?.slice(1).find(Boolean)?.split(/\s+/).filter(Boolean) ?? [];
+  return {
+    depth: numberField(line, "depth"),
+    meanDepth: numberField(line, "mean-depth"),
+    score: numberField(line, "score"),
+    nodes: numberField(line, "nodes"),
+    timeSeconds: numberField(line, "time"),
+    nodesPerSecondMillions: numberField(line, "nps"),
+    principalVariation
+  };
 }
 
 function squareToPoint(square: number): BoardPoint {
@@ -152,6 +172,11 @@ function squareToPoint(square: number): BoardPoint {
   const offset = index % 5;
   const col = offset * 2 + (row % 2 === 0 ? 1 : 0);
   return { row, col };
+}
+
+function numberField(line: string, field: string): number | undefined {
+  const value = line.match(new RegExp(`\\b${field}=(-?\\d+(?:\\.\\d+)?)`))?.[1];
+  return value === undefined ? undefined : Number(value);
 }
 
 function positiveInteger(value: string | undefined, fallback: number): number {

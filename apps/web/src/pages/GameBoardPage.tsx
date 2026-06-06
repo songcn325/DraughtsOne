@@ -1,8 +1,9 @@
 import { applyMove, createInitialGameState, generateLegalMoves } from "@draughtsone/draughts-engine";
 import type { LegalMove } from "@draughtsone/draughts-engine";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import type { BoardPoint, GameState } from "@draughtsone/shared";
+import type { AiBestMoveView, BoardPoint, GameState } from "@draughtsone/shared";
+import { api } from "../api/client";
 import { DraughtsBoard } from "../components/DraughtsBoard";
 import { PlayerCard } from "../components/PlayerCard";
 import { TactileButton } from "../components/TactileButton";
@@ -28,6 +29,18 @@ function formatClock(seconds: number) {
 
 function colorLabel(color: GameState["turn"]) {
   return color === "white" ? "White" : "Black";
+}
+
+function formatEvaluation(score: number | undefined, analyzedTurn: GameState["turn"] | undefined) {
+  if (score === undefined || !analyzedTurn) return "Not available";
+  if (Math.abs(score) < 0.01) return "Equal";
+  const favored = score > 0 ? analyzedTurn : analyzedTurn === "white" ? "black" : "white";
+  return `${colorLabel(favored)} +${Math.abs(score).toFixed(2)}`;
+}
+
+function formatNodes(nodes: number | undefined) {
+  if (nodes === undefined) return "—";
+  return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(nodes);
 }
 
 function squareNumber(point: BoardPoint) {
@@ -83,6 +96,12 @@ export function GameBoardPage() {
   const [winnerDialogOpen, setWinnerDialogOpen] = useState(false);
   const [pdnDialogOpen, setPdnDialogOpen] = useState(false);
   const [learnerMode, setLearnerMode] = useState(true);
+  const [analysis, setAnalysis] = useState<AiBestMoveView>();
+  const [analysisTurn, setAnalysisTurn] = useState<GameState["turn"]>();
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string>();
+  const [showBestMoveArrow, setShowBestMoveArrow] = useState(false);
+  const analysisRequestId = useRef(0);
   const legalMoves = useMemo(() => generateLegalMoves(state), [state]);
   const selectedMoves = selected ? legalMoves.filter((move) => samePoint(move.from, selected)) : [];
   const captureIsMandatory = legalMoves.some((move) => move.captures.length > 0);
@@ -141,14 +160,19 @@ export function GameBoardPage() {
     }
 
     const nextState = applyMove(state, move);
+    analysisRequestId.current += 1;
     setState(nextState);
     setHistory((moves) => [...moves, move]);
+    setAnalysis(undefined);
+    setAnalysisTurn(undefined);
+    setAnalysisError(undefined);
     setSelected(undefined);
     if (nextState.winner) setWinnerDialogOpen(true);
     setMessage(nextState.winner ? `${colorLabel(nextState.winner)} wins by ${nextState.resultReason}.` : `${colorLabel(nextState.turn)} to move.`);
   }
 
   function resetGame() {
+    analysisRequestId.current += 1;
     setState(createInitialGameState());
     setSelected(undefined);
     setHistory([]);
@@ -159,10 +183,16 @@ export function GameBoardPage() {
     setLearnerInfoOpen(false);
     setWinnerDialogOpen(false);
     setPdnDialogOpen(false);
+    setAnalysis(undefined);
+    setAnalysisTurn(undefined);
+    setAnalysisLoading(false);
+    setAnalysisError(undefined);
+    setShowBestMoveArrow(false);
     setMessage("White to move. Select a piece.");
   }
 
   function confirmResign() {
+    analysisRequestId.current += 1;
     const winner = state.turn === "white" ? "black" : "white";
     setState((current) => ({ ...current, winner, resultReason: "resignation" }));
     setSelected(undefined);
@@ -171,11 +201,40 @@ export function GameBoardPage() {
     setMessage(`${colorLabel(state.turn)} resigned. ${colorLabel(winner)} wins.`);
   }
 
+  async function analyzePosition() {
+    const requestId = analysisRequestId.current + 1;
+    analysisRequestId.current = requestId;
+    setAnalysisLoading(true);
+    setAnalysisError(undefined);
+
+    try {
+      const response = await api.analyzePosition({ state, moveTimeMs: 3000 });
+      if (analysisRequestId.current !== requestId) return;
+      if (!response.ok) {
+        setAnalysisError(response.error.message);
+        return;
+      }
+      setAnalysis(response.data);
+      setAnalysisTurn(state.turn);
+    } catch {
+      if (analysisRequestId.current === requestId) setAnalysisError("Position analysis is temporarily unavailable.");
+    } finally {
+      if (analysisRequestId.current === requestId) setAnalysisLoading(false);
+    }
+  }
+
   return (
     <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(320px,520px)_1fr]">
       <section className="space-y-4">
         <PlayerCard name="Black side" rating={1240} clock={formatClock(clocks.black)} active={state.turn === "black"} />
-        <DraughtsBoard state={state} selected={selected} legalTargets={learnerMode ? selectedMoves.map((move) => move.to) : []} latestMove={latestMove} onSquareClick={handleSquareClick} />
+        <DraughtsBoard
+          state={state}
+          selected={selected}
+          legalTargets={learnerMode ? selectedMoves.map((move) => move.to) : []}
+          latestMove={latestMove}
+          bestMove={showBestMoveArrow ? analysis : undefined}
+          onSquareClick={handleSquareClick}
+        />
         <PlayerCard name="White side" rating={1188} clock={formatClock(clocks.white)} active={state.turn === "white"} />
       </section>
       <aside className="space-y-4">
@@ -212,6 +271,76 @@ export function GameBoardPage() {
               aria-label="Toggle learner mode"
             >
               <span className={`block h-6 w-6 rounded-full bg-white shadow transition ${learnerMode ? "translate-x-6" : "translate-x-0"}`} />
+            </button>
+          </div>
+        </section>
+        <section className="rounded-lg bg-surface-container-lowest p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-black uppercase tracking-wider text-primary">Scan engine</p>
+              <h2 className="mt-1 text-xl font-black">Position analysis</h2>
+              <p className="mt-1 text-sm font-semibold text-on-surface-variant">Evaluate the current board and calculate the best continuation.</p>
+            </div>
+            <TactileButton
+              tone="secondary"
+              className="shrink-0 px-4 py-2 text-sm disabled:cursor-wait disabled:opacity-60"
+              disabled={analysisLoading || Boolean(state.winner)}
+              onClick={() => void analyzePosition()}
+            >
+              {analysisLoading ? "Analyzing…" : analysis ? "Analyze again" : "Analyze"}
+            </TactileButton>
+          </div>
+
+          {analysisError && <p className="mt-4 rounded-lg bg-error/10 p-3 text-sm font-bold text-error">{analysisError}</p>}
+
+          {analysis ? (
+            <>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="rounded-lg bg-surface-container-low p-3">
+                  <p className="text-xs font-black uppercase text-on-surface-variant">Evaluation</p>
+                  <p className="mt-1 font-black text-primary">{formatEvaluation(analysis.score, analysisTurn)}</p>
+                </div>
+                <div className="rounded-lg bg-surface-container-low p-3">
+                  <p className="text-xs font-black uppercase text-on-surface-variant">Depth</p>
+                  <p className="mt-1 font-black">{analysis.depth ?? "—"}</p>
+                </div>
+                <div className="rounded-lg bg-surface-container-low p-3">
+                  <p className="text-xs font-black uppercase text-on-surface-variant">Nodes</p>
+                  <p className="mt-1 font-black">{formatNodes(analysis.nodes)}</p>
+                </div>
+              </div>
+              <div className="mt-3 rounded-lg bg-primary-fixed/35 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-black uppercase text-primary">Best move</span>
+                  <span className="rounded-full bg-white px-3 py-1 font-mono text-lg font-black text-primary">{analysis.notation}</span>
+                </div>
+                <p className="mt-3 break-words font-mono text-sm font-bold text-on-surface-variant">
+                  {analysis.principalVariation.length > 0 ? analysis.principalVariation.join(" ") : analysis.notation}
+                </p>
+                <p className="mt-2 text-xs font-bold text-on-surface-variant">
+                  {analysis.timeSeconds?.toFixed(2) ?? "—"}s · {analysis.nodesPerSecondMillions?.toFixed(1) ?? "—"} MN/s
+                </p>
+              </div>
+            </>
+          ) : (
+            !analysisLoading &&
+            !analysisError && <p className="mt-4 rounded-lg bg-surface-container-low p-3 text-sm font-semibold text-on-surface-variant">Run an analysis to see the evaluation, best move, and principal variation.</p>
+          )}
+
+          <div className="mt-4 flex items-center justify-between gap-4 border-t border-outline-variant/30 pt-4">
+            <div>
+              <p className="font-black">Best-move arrow</p>
+              <p className="text-sm font-semibold text-on-surface-variant">Show Scan’s recommendation on the board.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowBestMoveArrow((current) => !current)}
+              disabled={!analysis}
+              className={`relative h-8 w-14 shrink-0 rounded-full p-1 transition disabled:cursor-not-allowed disabled:opacity-40 ${showBestMoveArrow && analysis ? "bg-primary" : "bg-surface-container-highest"}`}
+              aria-pressed={showBestMoveArrow}
+              aria-label="Toggle best-move arrow"
+            >
+              <span className={`block h-6 w-6 rounded-full bg-white shadow transition ${showBestMoveArrow && analysis ? "translate-x-6" : "translate-x-0"}`} />
             </button>
           </div>
         </section>

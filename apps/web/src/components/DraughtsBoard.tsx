@@ -5,6 +5,7 @@ type Props = {
   selected?: BoardPoint;
   legalTargets?: BoardPoint[];
   latestMove?: { from: BoardPoint; to: BoardPoint };
+  bestMove?: { from: BoardPoint; to: BoardPoint };
   onSquareClick?: (point: BoardPoint) => void;
 };
 
@@ -12,10 +13,10 @@ function samePoint(a: BoardPoint | undefined, b: BoardPoint) {
   return a?.row === b.row && a.col === b.col;
 }
 
-export function DraughtsBoard({ state, selected, legalTargets = [], latestMove, onSquareClick }: Props) {
+export function DraughtsBoard({ state, selected, legalTargets = [], latestMove, bestMove, onSquareClick }: Props) {
   return (
     <div className="rounded-lg bg-surface-container-low p-3 shadow-[0_8px_24px_rgba(45,47,47,0.06)]">
-      <div className="grid aspect-square grid-cols-10 overflow-hidden rounded-lg bg-surface-container-highest">
+      <div className="relative grid aspect-square grid-cols-10 overflow-hidden rounded-lg bg-surface-container-highest">
         {state.board.map((row, rowIndex) =>
           row.map((piece, colIndex) => {
             const dark = (rowIndex + colIndex) % 2 === 1;
@@ -53,6 +54,26 @@ export function DraughtsBoard({ state, selected, legalTargets = [], latestMove, 
               </button>
             );
           })
+        )}
+        {bestMove && (
+          <svg className="pointer-events-none absolute inset-0 z-20 h-full w-full" viewBox="0 0 100 100" aria-hidden="true">
+            <defs>
+              <marker id="best-move-arrowhead" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto">
+                <path d="M0,0 L7,3.5 L0,7 Z" fill="#ffcb2a" />
+              </marker>
+            </defs>
+            <line
+              x1={bestMove.from.col * 10 + 5}
+              y1={bestMove.from.row * 10 + 5}
+              x2={bestMove.to.col * 10 + 5}
+              y2={bestMove.to.row * 10 + 5}
+              stroke="#ffcb2a"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              markerEnd="url(#best-move-arrowhead)"
+              className="drop-shadow-[0_2px_2px_rgba(66,50,0,0.65)]"
+            />
+          </svg>
         )}
       </div>
     </div>

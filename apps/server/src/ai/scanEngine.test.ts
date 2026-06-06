@@ -1,6 +1,6 @@
 import type { GameState } from "@draughtsone/shared";
 import { describe, expect, it } from "vitest";
-import { parseHubMove, toHubPosition } from "./scanEngine.js";
+import { parseHubInfo, parseHubMove, toHubPosition } from "./scanEngine.js";
 
 describe("Scan Hub adapter", () => {
   it("serializes the standard 10x10 starting position", () => {
@@ -18,16 +18,32 @@ describe("Scan Hub adapter", () => {
         { row: 6, col: 7 },
         { row: 5, col: 8 }
       ],
-      ponder: "17-21"
+      ponder: "17-21",
+      principalVariation: []
     });
   });
 
-  it("preserves every landing in a capture sequence", () => {
-    expect(parseHubMove("32x23x14").path).toEqual([
-      { row: 6, col: 3 },
-      { row: 4, col: 5 },
-      { row: 2, col: 7 }
-    ]);
+  it("uses the second square as the capture landing square", () => {
+    expect(parseHubMove("32x23x14")).toMatchObject({
+      from: { row: 6, col: 3 },
+      to: { row: 4, col: 5 }
+    });
+  });
+
+  it("parses the final progressive analysis line", () => {
+    expect(
+      parseHubInfo(
+        'info depth=21 mean-depth=20.9 score=-0.01 nodes=20760277 time=2.417 nps=8.6 pv="34-30 20-25 32-28"'
+      )
+    ).toEqual({
+      depth: 21,
+      meanDepth: 20.9,
+      score: -0.01,
+      nodes: 20760277,
+      timeSeconds: 2.417,
+      nodesPerSecondMillions: 8.6,
+      principalVariation: ["34-30", "20-25", "32-28"]
+    });
   });
 });
 

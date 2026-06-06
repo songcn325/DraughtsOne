@@ -35,6 +35,13 @@ export type AiBestMoveView = {
   to: BoardPoint;
   path: BoardPoint[];
   ponder?: string;
+  depth?: number;
+  meanDepth?: number;
+  score?: number;
+  nodes?: number;
+  timeSeconds?: number;
+  nodesPerSecondMillions?: number;
+  principalVariation: string[];
 };
 
 export type AiAnalysisApiContract = {

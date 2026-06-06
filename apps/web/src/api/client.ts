@@ -1,4 +1,4 @@
-import type { ApiResponse, DailyTrainingView, LearnPath, UserProfileView } from "@draughtsone/shared";
+import type { AiBestMoveRequest, AiBestMoveView, ApiResponse, DailyTrainingView, LearnPath, UserProfileView } from "@draughtsone/shared";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? "http://localhost:4000" : "/api");
 
@@ -9,8 +9,18 @@ export async function apiGet<T>(path: string): Promise<ApiResponse<T>> {
   return response.json();
 }
 
+export async function apiPost<TRequest, TResponse>(path: string, body: TRequest): Promise<ApiResponse<TResponse>> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  return response.json();
+}
+
 export const api = {
   me: () => apiGet<UserProfileView>("/me"),
   learnPath: () => apiGet<LearnPath>("/learn/path"),
-  dailyTraining: () => apiGet<DailyTrainingView>("/train/daily")
+  dailyTraining: () => apiGet<DailyTrainingView>("/train/daily"),
+  analyzePosition: (request: AiBestMoveRequest) => apiPost<AiBestMoveRequest, AiBestMoveView>("/ai/best-move", request)
 };
