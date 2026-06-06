@@ -1,10 +1,10 @@
-import { createInitialGameState } from "@draughtsone/draughts-engine";
+import type { GameState } from "@draughtsone/shared";
 import { describe, expect, it } from "vitest";
 import { parseHubMove, toHubPosition } from "./scanEngine.js";
 
 describe("Scan Hub adapter", () => {
   it("serializes the standard 10x10 starting position", () => {
-    const position = toHubPosition(createInitialGameState());
+    const position = toHubPosition(createInitialState());
 
     expect(position).toBe(`W${"b".repeat(20)}${"e".repeat(10)}${"w".repeat(20)}`);
   });
@@ -30,3 +30,15 @@ describe("Scan Hub adapter", () => {
     ]);
   });
 });
+
+function createInitialState(): GameState {
+  const board: GameState["board"] = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => null));
+  for (let row = 0; row < 10; row += 1) {
+    for (let col = 0; col < 10; col += 1) {
+      if ((row + col) % 2 === 0) continue;
+      if (row < 4) board[row][col] = { id: `b-${row}-${col}`, color: "black", kind: "man" };
+      if (row > 5) board[row][col] = { id: `w-${row}-${col}`, color: "white", kind: "man" };
+    }
+  }
+  return { board, turn: "white", ply: 0, mandatoryCapture: false };
+}
