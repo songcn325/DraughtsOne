@@ -1,4 +1,5 @@
 import type { BoardPoint, GameState } from "@draughtsone/shared";
+import { useLanguage } from "../i18n";
 
 type Props = {
   state: GameState;
@@ -14,6 +15,7 @@ function samePoint(a: BoardPoint | undefined, b: BoardPoint) {
 }
 
 export function DraughtsBoard({ state, selected, legalTargets = [], latestMove, bestMove, onSquareClick }: Props) {
+  const { t } = useLanguage();
   return (
     <div className="rounded-lg bg-surface-container-low p-3 shadow-[0_8px_24px_rgba(45,47,47,0.06)]">
       <div className="relative grid aspect-square grid-cols-10 overflow-hidden rounded-lg bg-surface-container-highest">
@@ -30,7 +32,7 @@ export function DraughtsBoard({ state, selected, legalTargets = [], latestMove, 
                 type="button"
                 onClick={() => onSquareClick?.(point)}
                 className={`relative aspect-square ${dark ? "bg-surface-container-highest" : "bg-surface-container-lowest"} ${isSelected ? "ring-4 ring-inset ring-secondary-fixed" : ""}`}
-                aria-label={`Square ${rowIndex + 1}, ${colIndex + 1}`}
+                aria-label={t("square", { row: rowIndex + 1, col: colIndex + 1 })}
               >
                 {isLatestMove && <span className="absolute inset-0 bg-tertiary-fixed/35" />}
                 {isTarget && <span className="absolute left-1/2 top-1/2 z-10 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-secondary shadow-[0_0_0_5px_rgba(255,203,42,0.45)]" />}

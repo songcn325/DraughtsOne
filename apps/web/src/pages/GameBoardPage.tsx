@@ -7,6 +7,7 @@ import { api } from "../api/client";
 import { DraughtsBoard } from "../components/DraughtsBoard";
 import { PlayerCard } from "../components/PlayerCard";
 import { TactileButton } from "../components/TactileButton";
+import { useLanguage, type TranslationKey } from "../i18n";
 
 function samePoint(a: BoardPoint, b: BoardPoint) {
   return a.row === b.row && a.col === b.col;
@@ -27,20 +28,22 @@ function formatClock(seconds: number) {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
-function colorLabel(color: GameState["turn"]) {
-  return color === "white" ? "White" : "Black";
-}
-
-function formatEvaluation(score: number | undefined, analyzedTurn: GameState["turn"] | undefined) {
-  if (score === undefined || !analyzedTurn) return "Not available";
-  if (Math.abs(score) < 0.01) return "Equal";
+function formatEvaluation(
+  score: number | undefined,
+  analyzedTurn: GameState["turn"] | undefined,
+  colorLabel: (color: GameState["turn"]) => string,
+  notAvailable: string,
+  equal: string
+) {
+  if (score === undefined || !analyzedTurn) return notAvailable;
+  if (Math.abs(score) < 0.01) return equal;
   const favored = score > 0 ? analyzedTurn : analyzedTurn === "white" ? "black" : "white";
   return `${colorLabel(favored)} +${Math.abs(score).toFixed(2)}`;
 }
 
-function formatNodes(nodes: number | undefined) {
+function formatNodes(nodes: number | undefined, language: "en" | "zh") {
   if (nodes === undefined) return "—";
-  return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(nodes);
+  return new Intl.NumberFormat(language === "zh" ? "zh-CN" : "en", { notation: "compact", maximumFractionDigits: 1 }).format(nodes);
 }
 
 function squareNumber(point: BoardPoint) {
@@ -82,11 +85,14 @@ function buildPdn(gameId: string, history: LegalMove[], state: GameState) {
 }
 
 export function GameBoardPage() {
+  const { language, t } = useLanguage();
+  const colorLabel = (color: GameState["turn"]) => t(color === "white" ? "white" : "black");
   const { gameId = "local-room" } = useParams();
   const startingSeconds = useMemo(() => initialClockSeconds(gameId), [gameId]);
   const [state, setState] = useState<GameState>(() => createInitialGameState());
   const [selected, setSelected] = useState<BoardPoint>();
-  const [message, setMessage] = useState("White to move. Select a piece.");
+  const [messageKey, setMessageKey] = useState<TranslationKey>("initialMessage");
+  const [messageValues, setMessageValues] = useState<Record<string, string | number>>({});
   const [history, setHistory] = useState<LegalMove[]>([]);
   const [clocks, setClocks] = useState(() => ({ white: startingSeconds, black: startingSeconds }));
   const [resignConfirmOpen, setResignConfirmOpen] = useState(false);
@@ -107,6 +113,18 @@ export function GameBoardPage() {
   const captureIsMandatory = legalMoves.some((move) => move.captures.length > 0);
   const latestMove = history[history.length - 1];
   const pdnText = useMemo(() => buildPdn(gameId, history, state), [gameId, history, state]);
+  const message = t(messageKey, messageValues);
+
+  useEffect(() => {
+    if (state.winner) return;
+    if (history.length === 0 && state.turn === "white") {
+      setMessageKey("initialMessage");
+      setMessageValues({});
+    } else {
+      setMessageKey("turnMessage");
+      setMessageValues({ side: colorLabel(state.turn) });
+    }
+  }, [language]);
 
   useEffect(() => {
     if (state.winner) return;
@@ -119,7 +137,8 @@ export function GameBoardPage() {
         if (nextSeconds === 0) {
           const winner = state.turn === "white" ? "black" : "white";
           setState((currentState) => ({ ...currentState, winner, resultReason: "timeout" }));
-          setMessage(`${colorLabel(state.turn)} ran out of time. ${colorLabel(winner)} wins.`);
+          setMessageKey("timeoutMessage");
+          setMessageValues({ side: colorLabel(state.turn), winner: colorLabel(winner) });
           setWinnerDialogOpen(true);
         }
         return next;
@@ -127,7 +146,7 @@ export function GameBoardPage() {
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [state.turn, state.winner]);
+  }, [state.turn, state.winner, language]);
 
   function handleSquareClick(point: BoardPoint) {
     if (state.winner) return;
@@ -135,7 +154,13 @@ export function GameBoardPage() {
     if (piece && piece.color !== state.turn) {
       setSelected(undefined);
       if (learnerMode && history.length === 0 && state.turn === "white") setRuleReminderOpen(true);
-      setMessage(history.length === 0 && state.turn === "white" ? "White moves first in draughts. Select a white piece to begin." : `It is ${colorLabel(state.turn).toLowerCase()}'s turn. Select a ${state.turn} piece.`);
+      if (history.length === 0 && state.turn === "white") {
+        setMessageKey("whiteFirstMessage");
+        setMessageValues({});
+      } else {
+        setMessageKey("turnSelectMessage");
+        setMessageValues({ side: colorLabel(state.turn), color: colorLabel(state.turn) });
+      }
       return;
     }
 
@@ -143,19 +168,27 @@ export function GameBoardPage() {
       setSelected(point);
       const options = legalMoves.filter((move) => samePoint(move.from, point));
       if (learnerMode && options.length === 0 && captureIsMandatory) setCaptureReminderOpen(true);
-      setMessage(options.length > 0 ? `${colorLabel(piece.color)} has ${options.length} legal move${options.length === 1 ? "" : "s"}.` : captureIsMandatory ? "A capture is mandatory. Choose a piece that can capture." : "That piece has no legal move. Choose another piece.");
+      if (options.length > 0) {
+        setMessageKey("legalOptions");
+        setMessageValues({ side: colorLabel(piece.color), count: options.length });
+      } else {
+        setMessageKey(captureIsMandatory ? "mustCapturePiece" : "noPieceMove");
+        setMessageValues({});
+      }
       return;
     }
 
     if (!selected) {
-      setMessage(`Select a ${state.turn} piece first.`);
+      setMessageKey("selectPieceFirst");
+      setMessageValues({ color: colorLabel(state.turn) });
       return;
     }
 
     const move = selectedMoves.find((candidate) => samePoint(candidate.to, point));
     if (!move) {
       if (learnerMode && captureIsMandatory) setCaptureReminderOpen(true);
-      setMessage(captureIsMandatory ? "That square is not legal. A capture is available and must be played." : "That square is not a legal destination.");
+      setMessageKey(captureIsMandatory ? "illegalCapture" : "illegalDestination");
+      setMessageValues({});
       return;
     }
 
@@ -168,7 +201,16 @@ export function GameBoardPage() {
     setAnalysisError(undefined);
     setSelected(undefined);
     if (nextState.winner) setWinnerDialogOpen(true);
-    setMessage(nextState.winner ? `${colorLabel(nextState.winner)} wins by ${nextState.resultReason}.` : `${colorLabel(nextState.turn)} to move.`);
+    if (nextState.winner) {
+      setMessageKey("winMessage");
+      setMessageValues({
+        side: colorLabel(nextState.winner),
+        reason: t(`reason${nextState.resultReason?.[0].toUpperCase()}${nextState.resultReason?.slice(1)}` as TranslationKey)
+      });
+    } else {
+      setMessageKey("turnMessage");
+      setMessageValues({ side: colorLabel(nextState.turn) });
+    }
   }
 
   function resetGame() {
@@ -188,7 +230,8 @@ export function GameBoardPage() {
     setAnalysisLoading(false);
     setAnalysisError(undefined);
     setShowBestMoveArrow(false);
-    setMessage("White to move. Select a piece.");
+    setMessageKey("initialMessage");
+    setMessageValues({});
   }
 
   function confirmResign() {
@@ -198,7 +241,8 @@ export function GameBoardPage() {
     setSelected(undefined);
     setResignConfirmOpen(false);
     setWinnerDialogOpen(true);
-    setMessage(`${colorLabel(state.turn)} resigned. ${colorLabel(winner)} wins.`);
+    setMessageKey("resignedMessage");
+    setMessageValues({ side: colorLabel(state.turn), winner: colorLabel(winner) });
   }
 
   async function analyzePosition() {
@@ -211,13 +255,13 @@ export function GameBoardPage() {
       const response = await api.analyzePosition({ state, moveTimeMs: 3000 });
       if (analysisRequestId.current !== requestId) return;
       if (!response.ok) {
-        setAnalysisError(response.error.message);
+        setAnalysisError(t("analysisUnavailable"));
         return;
       }
       setAnalysis(response.data);
       setAnalysisTurn(state.turn);
     } catch {
-      if (analysisRequestId.current === requestId) setAnalysisError("Position analysis is temporarily unavailable.");
+      if (analysisRequestId.current === requestId) setAnalysisError(t("analysisUnavailable"));
     } finally {
       if (analysisRequestId.current === requestId) setAnalysisLoading(false);
     }
@@ -226,7 +270,7 @@ export function GameBoardPage() {
   return (
     <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(320px,520px)_1fr]">
       <section className="space-y-4">
-        <PlayerCard name="Black side" rating={1240} clock={formatClock(clocks.black)} active={state.turn === "black"} />
+        <PlayerCard name={t("blackSide")} rating={1240} clock={formatClock(clocks.black)} active={state.turn === "black"} />
         <DraughtsBoard
           state={state}
           selected={selected}
@@ -235,40 +279,40 @@ export function GameBoardPage() {
           bestMove={showBestMoveArrow ? analysis : undefined}
           onSquareClick={handleSquareClick}
         />
-        <PlayerCard name="White side" rating={1188} clock={formatClock(clocks.white)} active={state.turn === "white"} />
+        <PlayerCard name={t("whiteSide")} rating={1188} clock={formatClock(clocks.white)} active={state.turn === "white"} />
       </section>
       <aside className="space-y-4">
         <section className="rounded-lg bg-surface-container-low p-5">
-          <p className="text-sm font-black uppercase text-primary">Room</p>
+          <p className="text-sm font-black uppercase text-primary">{t("room")}</p>
           <h1 className="mt-1 break-words text-2xl font-black">{gameId}</h1>
           <p className="mt-3 font-semibold text-on-surface-variant">{message}</p>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <TactileButton tone="surface" onClick={resetGame}>New game</TactileButton>
-            <TactileButton tone="danger" onClick={() => setResignConfirmOpen(true)}>Resign</TactileButton>
+            <TactileButton tone="surface" onClick={resetGame}>{t("newGame")}</TactileButton>
+            <TactileButton tone="danger" onClick={() => setResignConfirmOpen(true)}>{t("resign")}</TactileButton>
           </div>
         </section>
         <section className="rounded-lg bg-surface-container-lowest p-5">
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-black">Learner mode</h2>
+                <h2 className="text-xl font-black">{t("learnerMode")}</h2>
                 <button
                   type="button"
                   onClick={() => setLearnerInfoOpen(true)}
                   className="grid h-7 w-7 place-items-center rounded-full bg-surface-container-low text-sm font-black text-primary"
-                  aria-label="Explain learner mode"
+                  aria-label={t("explainLearner")}
                 >
                   ?
                 </button>
               </div>
-              <p className="mt-1 text-sm font-semibold text-on-surface-variant">{learnerMode ? "Legal destinations and rule tips are on." : "Hints and rule tips are off."}</p>
+              <p className="mt-1 text-sm font-semibold text-on-surface-variant">{t(learnerMode ? "learnerOn" : "learnerOff")}</p>
             </div>
             <button
               type="button"
               onClick={() => setLearnerMode((current) => !current)}
               className={`relative h-8 w-14 rounded-full p-1 transition ${learnerMode ? "bg-primary" : "bg-surface-container-highest"}`}
               aria-pressed={learnerMode}
-              aria-label="Toggle learner mode"
+              aria-label={t("toggleLearner")}
             >
               <span className={`block h-6 w-6 rounded-full bg-white shadow transition ${learnerMode ? "translate-x-6" : "translate-x-0"}`} />
             </button>
@@ -277,9 +321,9 @@ export function GameBoardPage() {
         <section className="rounded-lg bg-surface-container-lowest p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-black uppercase tracking-wider text-primary">Scan engine</p>
-              <h2 className="mt-1 text-xl font-black">Position analysis</h2>
-              <p className="mt-1 text-sm font-semibold text-on-surface-variant">Evaluate the current board and calculate the best continuation.</p>
+              <p className="text-sm font-black uppercase tracking-wider text-primary">{t("scanEngine")}</p>
+              <h2 className="mt-1 text-xl font-black">{t("positionAnalysis")}</h2>
+              <p className="mt-1 text-sm font-semibold text-on-surface-variant">{t("analysisDescription")}</p>
             </div>
             <TactileButton
               tone="secondary"
@@ -287,7 +331,7 @@ export function GameBoardPage() {
               disabled={analysisLoading || Boolean(state.winner)}
               onClick={() => void analyzePosition()}
             >
-              {analysisLoading ? "Analyzing…" : analysis ? "Analyze again" : "Analyze"}
+              {t(analysisLoading ? "analyzing" : analysis ? "analyzeAgain" : "analyze")}
             </TactileButton>
           </div>
 
@@ -297,21 +341,21 @@ export function GameBoardPage() {
             <>
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <div className="rounded-lg bg-surface-container-low p-3">
-                  <p className="text-xs font-black uppercase text-on-surface-variant">Evaluation</p>
-                  <p className="mt-1 font-black text-primary">{formatEvaluation(analysis.score, analysisTurn)}</p>
+                  <p className="text-xs font-black uppercase text-on-surface-variant">{t("evaluation")}</p>
+                  <p className="mt-1 font-black text-primary">{formatEvaluation(analysis.score, analysisTurn, colorLabel, t("notAvailable"), t("equal"))}</p>
                 </div>
                 <div className="rounded-lg bg-surface-container-low p-3">
-                  <p className="text-xs font-black uppercase text-on-surface-variant">Depth</p>
+                  <p className="text-xs font-black uppercase text-on-surface-variant">{t("depth")}</p>
                   <p className="mt-1 font-black">{analysis.depth ?? "—"}</p>
                 </div>
                 <div className="rounded-lg bg-surface-container-low p-3">
-                  <p className="text-xs font-black uppercase text-on-surface-variant">Nodes</p>
-                  <p className="mt-1 font-black">{formatNodes(analysis.nodes)}</p>
+                  <p className="text-xs font-black uppercase text-on-surface-variant">{t("nodes")}</p>
+                  <p className="mt-1 font-black">{formatNodes(analysis.nodes, language)}</p>
                 </div>
               </div>
               <div className="mt-3 rounded-lg bg-primary-fixed/35 p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-black uppercase text-primary">Best move</span>
+                  <span className="text-sm font-black uppercase text-primary">{t("bestMove")}</span>
                   <span className="rounded-full bg-white px-3 py-1 font-mono text-lg font-black text-primary">{analysis.notation}</span>
                 </div>
                 <p className="mt-3 break-words font-mono text-sm font-bold text-on-surface-variant">
@@ -324,14 +368,14 @@ export function GameBoardPage() {
             </>
           ) : (
             !analysisLoading &&
-            !analysisError && <p className="mt-4 rounded-lg bg-surface-container-low p-3 text-sm font-semibold text-on-surface-variant">Run an analysis to see the evaluation, best move, and principal variation.</p>
+            !analysisError && <p className="mt-4 rounded-lg bg-surface-container-low p-3 text-sm font-semibold text-on-surface-variant">{t("noAnalysis")}</p>
           )}
 
           <div className="mt-4 flex items-center justify-between gap-4 border-t border-outline-variant/30 pt-4">
             <div>
-              <p className="font-black">Best-move arrow</p>
+              <p className="font-black">{t("bestMoveArrow")}</p>
               <p className="text-sm font-semibold text-on-surface-variant">
-                {analysis ? "Show Scan’s recommendation on the board." : "Click Analyze first to calculate and show a recommendation."}
+                {t(analysis ? "showRecommendation" : "analyzeFirst")}
               </p>
             </div>
             <button
@@ -340,7 +384,7 @@ export function GameBoardPage() {
               disabled={!analysis}
               className={`relative h-8 w-14 shrink-0 rounded-full p-1 transition disabled:cursor-not-allowed disabled:opacity-40 ${showBestMoveArrow && analysis ? "bg-primary" : "bg-surface-container-highest"}`}
               aria-pressed={showBestMoveArrow}
-              aria-label="Toggle best-move arrow"
+              aria-label={t("toggleBestMove")}
             >
               <span className={`block h-6 w-6 rounded-full bg-white shadow transition ${showBestMoveArrow && analysis ? "translate-x-6" : "translate-x-0"}`} />
             </button>
@@ -348,18 +392,18 @@ export function GameBoardPage() {
         </section>
         <section className="rounded-lg bg-surface-container-lowest p-5">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-xl font-black">Move list</h2>
+            <h2 className="text-xl font-black">{t("moveList")}</h2>
             <button type="button" onClick={() => setPdnDialogOpen(true)} className="rounded-full bg-surface-container-low px-4 py-2 text-sm font-black text-primary">
-              Export PDN
+              {t("exportPdn")}
             </button>
           </div>
           <div className="mt-3 max-h-72 space-y-2 overflow-auto">
             {history.length === 0 ? (
-              <p className="font-semibold text-on-surface-variant">Moves appear here as soon as the first piece moves.</p>
+              <p className="font-semibold text-on-surface-variant">{t("noMoves")}</p>
             ) : (
               history.map((move, index) => (
                 <p key={`${move.from.row}-${move.from.col}-${index}`} className="rounded-lg bg-surface-container-low px-3 py-2 font-bold">
-                  {index + 1}. {move.from.row + 1},{move.from.col + 1} to {move.to.row + 1},{move.to.col + 1}
+                  {t("moveLine", { number: index + 1, fromRow: move.from.row + 1, fromCol: move.from.col + 1, toRow: move.to.row + 1, toCol: move.to.col + 1 })}
                 </p>
               ))
             )}
@@ -369,11 +413,11 @@ export function GameBoardPage() {
       {resignConfirmOpen && (
         <div className="fixed inset-0 z-[70] grid place-items-end bg-black/25 p-4 sm:place-items-center">
           <section className="w-full max-w-sm rounded-lg bg-surface p-6 shadow-[0_24px_80px_rgba(45,47,47,0.2)]">
-            <h2 className="text-2xl font-black">Resign this game?</h2>
-            <p className="mt-3 font-semibold text-on-surface-variant">This means {colorLabel(state.turn).toLowerCase()} surrenders and the other side wins.</p>
+            <h2 className="text-2xl font-black">{t("resignTitle")}</h2>
+            <p className="mt-3 font-semibold text-on-surface-variant">{t("resignDescription", { side: colorLabel(state.turn) })}</p>
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <TactileButton tone="surface" onClick={() => setResignConfirmOpen(false)}>Cancel</TactileButton>
-              <TactileButton tone="danger" onClick={confirmResign}>Confirm</TactileButton>
+              <TactileButton tone="surface" onClick={() => setResignConfirmOpen(false)}>{t("cancel")}</TactileButton>
+              <TactileButton tone="danger" onClick={confirmResign}>{t("confirm")}</TactileButton>
             </div>
           </section>
         </div>
@@ -381,12 +425,12 @@ export function GameBoardPage() {
       {winnerDialogOpen && state.winner && (
         <div className="fixed inset-0 z-[70] grid place-items-end bg-black/25 p-4 sm:place-items-center">
           <section className="w-full max-w-sm rounded-lg bg-surface p-6 shadow-[0_24px_80px_rgba(45,47,47,0.2)]">
-            <p className="text-sm font-black uppercase text-primary">Game over</p>
-            <h2 className="mt-2 text-3xl font-black">{colorLabel(state.winner)} side wins!</h2>
-            <p className="mt-3 font-semibold text-on-surface-variant">The final board is still visible behind this window.</p>
+            <p className="text-sm font-black uppercase text-primary">{t("gameOver")}</p>
+            <h2 className="mt-2 text-3xl font-black">{t("sideWins", { side: colorLabel(state.winner) })}</h2>
+            <p className="mt-3 font-semibold text-on-surface-variant">{t("finalBoard")}</p>
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <TactileButton tone="primary" onClick={resetGame}>New game</TactileButton>
-              <TactileButton tone="surface" onClick={() => setWinnerDialogOpen(false)}>Close</TactileButton>
+              <TactileButton tone="primary" onClick={resetGame}>{t("newGame")}</TactileButton>
+              <TactileButton tone="surface" onClick={() => setWinnerDialogOpen(false)}>{t("close")}</TactileButton>
             </div>
           </section>
         </div>
@@ -394,12 +438,12 @@ export function GameBoardPage() {
       {pdnDialogOpen && (
         <div className="fixed inset-0 z-[70] grid place-items-end bg-black/25 p-4 sm:place-items-center">
           <section className="w-full max-w-lg rounded-lg bg-surface p-6 shadow-[0_24px_80px_rgba(45,47,47,0.2)]">
-            <h2 className="text-2xl font-black">PDN export</h2>
-            <p className="mt-2 font-semibold text-on-surface-variant">Copy this move list for sharing, replay, or later analysis.</p>
+            <h2 className="text-2xl font-black">{t("pdnExport")}</h2>
+            <p className="mt-2 font-semibold text-on-surface-variant">{t("pdnDescription")}</p>
             <textarea className="mt-4 h-64 w-full resize-none rounded-lg bg-surface-container-low p-4 font-mono text-sm font-bold outline-none" readOnly value={pdnText} />
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <TactileButton tone="primary" onClick={() => void navigator.clipboard?.writeText(pdnText)}>Copy</TactileButton>
-              <TactileButton tone="surface" onClick={() => setPdnDialogOpen(false)}>Close</TactileButton>
+              <TactileButton tone="primary" onClick={() => void navigator.clipboard?.writeText(pdnText)}>{t("copy")}</TactileButton>
+              <TactileButton tone="surface" onClick={() => setPdnDialogOpen(false)}>{t("close")}</TactileButton>
             </div>
           </section>
         </div>
@@ -407,27 +451,27 @@ export function GameBoardPage() {
       {ruleReminderOpen && (
         <div className="fixed inset-0 z-[70] grid place-items-end bg-black/25 p-4 sm:place-items-center">
           <section className="w-full max-w-sm rounded-lg bg-surface p-6 shadow-[0_24px_80px_rgba(45,47,47,0.2)]">
-            <h2 className="text-2xl font-black">White moves first</h2>
-            <p className="mt-3 font-semibold text-on-surface-variant">In draughts, the white side starts the game. Select a white piece to make the first move.</p>
-            <TactileButton className="mt-6 w-full" onClick={() => setRuleReminderOpen(false)}>Got it</TactileButton>
+            <h2 className="text-2xl font-black">{t("whiteMovesFirstTitle")}</h2>
+            <p className="mt-3 font-semibold text-on-surface-variant">{t("whiteMovesFirstBody")}</p>
+            <TactileButton className="mt-6 w-full" onClick={() => setRuleReminderOpen(false)}>{t("gotIt")}</TactileButton>
           </section>
         </div>
       )}
       {captureReminderOpen && (
         <div className="fixed inset-0 z-[70] grid place-items-end bg-black/25 p-4 sm:place-items-center">
           <section className="w-full max-w-sm rounded-lg bg-surface p-6 shadow-[0_24px_80px_rgba(45,47,47,0.2)]">
-            <h2 className="text-2xl font-black">Capture is mandatory</h2>
-            <p className="mt-3 font-semibold text-on-surface-variant">When one of your pieces can capture an opponent piece, you must make a capture move. Choose a piece with a highlighted capture destination.</p>
-            <TactileButton className="mt-6 w-full" onClick={() => setCaptureReminderOpen(false)}>Got it</TactileButton>
+            <h2 className="text-2xl font-black">{t("captureMandatoryTitle")}</h2>
+            <p className="mt-3 font-semibold text-on-surface-variant">{t("captureMandatoryBody")}</p>
+            <TactileButton className="mt-6 w-full" onClick={() => setCaptureReminderOpen(false)}>{t("gotIt")}</TactileButton>
           </section>
         </div>
       )}
       {learnerInfoOpen && (
         <div className="fixed inset-0 z-[70] grid place-items-end bg-black/25 p-4 sm:place-items-center">
           <section className="w-full max-w-sm rounded-lg bg-surface p-6 shadow-[0_24px_80px_rgba(45,47,47,0.2)]">
-            <h2 className="text-2xl font-black">Learner mode</h2>
-            <p className="mt-3 font-semibold text-on-surface-variant">When enabled, DraughtsOne shows legal destinations and explains rules when a move is not allowed. Turn it off when you want to play without hints.</p>
-            <TactileButton className="mt-6 w-full" onClick={() => setLearnerInfoOpen(false)}>Got it</TactileButton>
+            <h2 className="text-2xl font-black">{t("learnerMode")}</h2>
+            <p className="mt-3 font-semibold text-on-surface-variant">{t("learnerBody")}</p>
+            <TactileButton className="mt-6 w-full" onClick={() => setLearnerInfoOpen(false)}>{t("gotIt")}</TactileButton>
           </section>
         </div>
       )}

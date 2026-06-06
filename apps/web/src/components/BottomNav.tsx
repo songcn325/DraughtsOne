@@ -1,13 +1,15 @@
 import { NavLink } from "react-router-dom";
+import { useLanguage, type TranslationKey } from "../i18n";
 
 const items = [
-  { to: "/learn", icon: "school", label: "Learn" },
-  { to: "/train", icon: "fitness_center", label: "Train" },
-  { to: "/play", icon: "sports_esports", label: "Play" },
-  { to: "/ai", icon: "psychology", label: "AI" }
+  { to: "/learn", icon: "school", label: "navLearn" },
+  { to: "/train", icon: "fitness_center", label: "navTrain" },
+  { to: "/play", icon: "sports_esports", label: "navPlay" },
+  { to: "/ai", icon: "psychology", label: "navAi" }
 ];
 
 export function BottomNav() {
+  const { t } = useLanguage();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t-0 bg-surface/85 px-5 py-4 backdrop-blur-xl">
       <div className="mx-auto grid max-w-md grid-cols-4 rounded-full bg-surface-container-lowest px-3 py-2 shadow-[0_8px_32px_rgba(45,47,47,0.08)]">
@@ -16,7 +18,7 @@ export function BottomNav() {
             {({ isActive }) => (
               <>
                 <span className={`material-symbols-outlined ${isActive ? "fill -translate-y-1" : ""}`}>{item.icon}</span>
-                <span>{item.label}</span>
+                <span>{t(item.label as TranslationKey)}</span>
               </>
             )}
           </NavLink>
@@ -25,4 +27,3 @@ export function BottomNav() {
     </nav>
   );
 }
-
