@@ -9,11 +9,12 @@ export async function apiGet<T>(path: string): Promise<ApiResponse<T>> {
   return response.json();
 }
 
-export async function apiPost<TRequest, TResponse>(path: string, body: TRequest): Promise<ApiResponse<TResponse>> {
+export async function apiPost<TRequest, TResponse>(path: string, body: TRequest, signal?: AbortSignal): Promise<ApiResponse<TResponse>> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal
   });
   return response.json();
 }
@@ -22,5 +23,5 @@ export const api = {
   me: () => apiGet<UserProfileView>("/me"),
   learnPath: () => apiGet<LearnPath>("/learn/path"),
   dailyTraining: () => apiGet<DailyTrainingView>("/train/daily"),
-  analyzePosition: (request: AiBestMoveRequest) => apiPost<AiBestMoveRequest, AiBestMoveView>("/ai/best-move", request)
+  analyzePosition: (request: AiBestMoveRequest, signal?: AbortSignal) => apiPost<AiBestMoveRequest, AiBestMoveView>("/ai/best-move", request, signal)
 };

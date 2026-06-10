@@ -106,8 +106,10 @@ export function GameBoardPage() {
   const [analysisTurn, setAnalysisTurn] = useState<GameState["turn"]>();
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState<string>();
+  const [analysisEnabled, setAnalysisEnabled] = useState(false);
   const [showBestMoveArrow, setShowBestMoveArrow] = useState(false);
   const analysisRequestId = useRef(0);
+  const analysisAbortController = useRef<AbortController>();
   const legalMoves = useMemo(() => generateLegalMoves(state), [state]);
   const selectedMoves = selected ? legalMoves.filter((move) => samePoint(move.from, selected)) : [];
   const captureIsMandatory = legalMoves.some((move) => move.captures.length > 0);
@@ -147,6 +149,46 @@ export function GameBoardPage() {
 
     return () => window.clearInterval(timer);
   }, [state.turn, state.winner, language]);
+
+  useEffect(() => {
+    if (!analysisEnabled || state.winner) return;
+
+    const requestId = analysisRequestId.current + 1;
+    const controller = new AbortController();
+    analysisRequestId.current = requestId;
+    analysisAbortController.current?.abort();
+    analysisAbortController.current = controller;
+    setAnalysisLoading(true);
+    setAnalysisError(undefined);
+
+    void api.analyzePosition({ state, moveTimeMs: 3000 }, controller.signal)
+      .then((response) => {
+        if (analysisRequestId.current !== requestId || controller.signal.aborted) return;
+        if (!response.ok) {
+          setAnalysisError(t("analysisUnavailable"));
+          return;
+        }
+        setAnalysis(response.data);
+        setAnalysisTurn(state.turn);
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted || analysisRequestId.current !== requestId) return;
+        setAnalysisError(t("analysisUnavailable"));
+      })
+      .finally(() => {
+        if (analysisRequestId.current === requestId && !controller.signal.aborted) setAnalysisLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [analysisEnabled, state, language]);
+
+  useEffect(() => {
+    if (!state.winner || !analysisEnabled) return;
+    analysisRequestId.current += 1;
+    analysisAbortController.current?.abort();
+    setAnalysisEnabled(false);
+    setAnalysisLoading(false);
+  }, [analysisEnabled, state.winner]);
 
   function handleSquareClick(point: BoardPoint) {
     if (state.winner) return;
@@ -194,6 +236,7 @@ export function GameBoardPage() {
 
     const nextState = applyMove(state, move);
     analysisRequestId.current += 1;
+    analysisAbortController.current?.abort();
     setState(nextState);
     setHistory((moves) => [...moves, move]);
     setAnalysis(undefined);
@@ -215,6 +258,7 @@ export function GameBoardPage() {
 
   function resetGame() {
     analysisRequestId.current += 1;
+    analysisAbortController.current?.abort();
     setState(createInitialGameState());
     setSelected(undefined);
     setHistory([]);
@@ -229,6 +273,7 @@ export function GameBoardPage() {
     setAnalysisTurn(undefined);
     setAnalysisLoading(false);
     setAnalysisError(undefined);
+    setAnalysisEnabled(false);
     setShowBestMoveArrow(false);
     setMessageKey("initialMessage");
     setMessageValues({});
@@ -236,6 +281,9 @@ export function GameBoardPage() {
 
   function confirmResign() {
     analysisRequestId.current += 1;
+    analysisAbortController.current?.abort();
+    setAnalysisEnabled(false);
+    setAnalysisLoading(false);
     const winner = state.turn === "white" ? "black" : "white";
     setState((current) => ({ ...current, winner, resultReason: "resignation" }));
     setSelected(undefined);
@@ -245,26 +293,17 @@ export function GameBoardPage() {
     setMessageValues({ side: colorLabel(state.turn), winner: colorLabel(winner) });
   }
 
-  async function analyzePosition() {
-    const requestId = analysisRequestId.current + 1;
-    analysisRequestId.current = requestId;
-    setAnalysisLoading(true);
+  function startAnalysis() {
+    setAnalysisEnabled(true);
     setAnalysisError(undefined);
+  }
 
-    try {
-      const response = await api.analyzePosition({ state, moveTimeMs: 3000 });
-      if (analysisRequestId.current !== requestId) return;
-      if (!response.ok) {
-        setAnalysisError(t("analysisUnavailable"));
-        return;
-      }
-      setAnalysis(response.data);
-      setAnalysisTurn(state.turn);
-    } catch {
-      if (analysisRequestId.current === requestId) setAnalysisError(t("analysisUnavailable"));
-    } finally {
-      if (analysisRequestId.current === requestId) setAnalysisLoading(false);
-    }
+  function stopAnalysis() {
+    analysisRequestId.current += 1;
+    analysisAbortController.current?.abort();
+    setAnalysisEnabled(false);
+    setAnalysisLoading(false);
+    setAnalysisError(undefined);
   }
 
   return (
@@ -326,16 +365,21 @@ export function GameBoardPage() {
               <p className="mt-1 text-sm font-semibold text-on-surface-variant">{t("analysisDescription")}</p>
             </div>
             <TactileButton
-              tone="secondary"
+              tone={analysisEnabled ? "danger" : "secondary"}
               className="shrink-0 px-4 py-2 text-sm disabled:cursor-wait disabled:opacity-60"
-              disabled={analysisLoading || Boolean(state.winner)}
-              onClick={() => void analyzePosition()}
+              disabled={!analysisEnabled && Boolean(state.winner)}
+              onClick={analysisEnabled ? stopAnalysis : startAnalysis}
             >
-              {t(analysisLoading ? "analyzing" : analysis ? "analyzeAgain" : "analyze")}
+              {t(analysisEnabled ? "stopAnalysis" : "analyze")}
             </TactileButton>
           </div>
 
           {analysisError && <p className="mt-4 rounded-lg bg-error/10 p-3 text-sm font-bold text-error">{analysisError}</p>}
+          {analysisEnabled && (
+            <p className="mt-4 rounded-lg bg-tertiary-fixed/40 p-3 text-sm font-bold text-tertiary">
+              {analysisLoading ? t("analyzing") : t("continuousAnalysisOn")}
+            </p>
+          )}
 
           {analysis ? (
             <>
@@ -375,7 +419,7 @@ export function GameBoardPage() {
             <div>
               <p className="font-black">{t("bestMoveArrow")}</p>
               <p className="text-sm font-semibold text-on-surface-variant">
-                {t(analysis ? "showRecommendation" : "analyzeFirst")}
+                {t(analysisEnabled ? "showRecommendation" : "analyzeFirst")}
               </p>
             </div>
             <button
