@@ -8,6 +8,7 @@ import { PlayerCard } from "../components/PlayerCard";
 import { TactileButton } from "../components/TactileButton";
 import { useLanguage } from "../i18n";
 import { createGameSocket, type GameSocket } from "../socket/gameSocket";
+import { createClientMoveId } from "../utils/clientId";
 
 function samePoint(a: BoardPoint, b: BoardPoint) {
   return a.row === b.row && a.col === b.col;
@@ -92,11 +93,21 @@ export function OnlineGamePage() {
     if (!selected) return;
     const move = selectedMoves.find((candidate) => samePoint(candidate.to, point));
     if (!move) return;
-    setPendingMove(true);
-    socketRef.current?.emit("game:move", {
-      gameId,
-      move: { from: move.from, to: move.to, path: move.path, clientMoveId: crypto.randomUUID() }
-    });
+    const socket = socketRef.current;
+    if (!socket?.connected) {
+      setMoveError(t("connectionLost"));
+      return;
+    }
+    try {
+      setPendingMove(true);
+      socket.emit("game:move", {
+        gameId,
+        move: { from: move.from, to: move.to, path: move.path, clientMoveId: createClientMoveId() }
+      });
+    } catch {
+      setPendingMove(false);
+      setMoveError(t("moveRejected"));
+    }
   }
 
   if (!game) {
