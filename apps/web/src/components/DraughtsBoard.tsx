@@ -3,6 +3,7 @@ import { useLanguage } from "../i18n";
 
 type Props = {
   state: GameState;
+  orientation?: "white" | "black";
   selected?: BoardPoint;
   legalTargets?: BoardPoint[];
   latestMove?: { from: BoardPoint; to: BoardPoint };
@@ -14,13 +15,20 @@ function samePoint(a: BoardPoint | undefined, b: BoardPoint) {
   return a?.row === b.row && a.col === b.col;
 }
 
-export function DraughtsBoard({ state, selected, legalTargets = [], latestMove, bestMove, onSquareClick }: Props) {
+function orientedCoordinate(value: number, orientation: "white" | "black") {
+  return orientation === "black" ? 9 - value : value;
+}
+
+export function DraughtsBoard({ state, orientation = "white", selected, legalTargets = [], latestMove, bestMove, onSquareClick }: Props) {
   const { t } = useLanguage();
   return (
     <div className="rounded-lg bg-surface-container-low p-3 shadow-[0_8px_24px_rgba(45,47,47,0.06)]">
       <div className="relative grid aspect-square grid-cols-10 overflow-hidden rounded-lg bg-surface-container-highest">
-        {state.board.map((row, rowIndex) =>
-          row.map((piece, colIndex) => {
+        {Array.from({ length: 10 }, (_, displayRow) =>
+          Array.from({ length: 10 }, (_, displayCol) => {
+            const rowIndex = orientedCoordinate(displayRow, orientation);
+            const colIndex = orientedCoordinate(displayCol, orientation);
+            const piece = state.board[rowIndex][colIndex];
             const dark = (rowIndex + colIndex) % 2 === 1;
             const point = { row: rowIndex, col: colIndex };
             const isSelected = samePoint(selected, point);
@@ -65,10 +73,10 @@ export function DraughtsBoard({ state, selected, legalTargets = [], latestMove, 
               </marker>
             </defs>
             <line
-              x1={bestMove.from.col * 10 + 5}
-              y1={bestMove.from.row * 10 + 5}
-              x2={bestMove.to.col * 10 + 5}
-              y2={bestMove.to.row * 10 + 5}
+              x1={orientedCoordinate(bestMove.from.col, orientation) * 10 + 5}
+              y1={orientedCoordinate(bestMove.from.row, orientation) * 10 + 5}
+              x2={orientedCoordinate(bestMove.to.col, orientation) * 10 + 5}
+              y2={orientedCoordinate(bestMove.to.row, orientation) * 10 + 5}
               stroke="#ffcb2a"
               strokeWidth="1.5"
               strokeLinecap="round"

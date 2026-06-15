@@ -95,6 +95,10 @@ export function OnlineGamePage() {
   const whitePlayer = game?.players?.find((player) => player.color === "white");
   const blackPlayer = game?.players?.find((player) => player.color === "black");
   const pdnText = useMemo(() => game ? buildOnlinePdn(game, moveHistory) : "", [game, moveHistory]);
+  const topPlayer = playerColor === "black" ? whitePlayer : blackPlayer;
+  const topColor: PlayerColor = playerColor === "black" ? "white" : "black";
+  const bottomPlayer = playerColor === "black" ? blackPlayer : whitePlayer;
+  const bottomColor: PlayerColor = playerColor === "black" ? "black" : "white";
 
   function handleSquareClick(point: BoardPoint) {
     if (!game || !canMove) return;
@@ -156,23 +160,24 @@ export function OnlineGamePage() {
     <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(320px,520px)_1fr]">
       <section className="space-y-4">
         <PlayerCard
-          name={blackPlayer?.displayName ?? t("blackSide")}
-          rating={blackPlayer?.rating ?? 1200}
-          clock={formatClock(blackClock)}
-          active={game.state.turn === "black"}
+          name={topPlayer?.displayName ?? t(topColor === "white" ? "whiteSide" : "blackSide")}
+          rating={topPlayer?.rating ?? 1200}
+          clock={formatClock(topColor === "white" ? whiteClock : blackClock)}
+          active={game.state.turn === topColor}
         />
         <DraughtsBoard
           state={game.state}
+          orientation={playerColor ?? "white"}
           selected={selected}
           legalTargets={canMove ? selectedMoves.map((move) => move.to) : []}
           latestMove={latestMove?.payload}
           onSquareClick={handleSquareClick}
         />
         <PlayerCard
-          name={whitePlayer?.displayName ?? t("whiteSide")}
-          rating={whitePlayer?.rating ?? 1200}
-          clock={formatClock(whiteClock)}
-          active={game.state.turn === "white"}
+          name={bottomPlayer?.displayName ?? t(bottomColor === "white" ? "whiteSide" : "blackSide")}
+          rating={bottomPlayer?.rating ?? 1200}
+          clock={formatClock(bottomColor === "white" ? whiteClock : blackClock)}
+          active={game.state.turn === bottomColor}
         />
       </section>
       <aside className="space-y-4">
