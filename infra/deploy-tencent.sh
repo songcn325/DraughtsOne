@@ -28,14 +28,25 @@ set +a
 npm ci
 npm run db:generate -w @draughtsone/server
 
-command -v docker >/dev/null 2>&1 || {
-  echo "Docker is required for the PostgreSQL service. Install Docker before deploying multiplayer." >&2
-  exit 1
-}
+if ! command -v psql >/dev/null 2>&1; then
+  sudo apt-get update
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql postgresql-contrib
+fi
 
-sudo docker compose -f infra/docker-compose.yml up -d postgres
+sudo systemctl enable --now postgresql
+
+if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='draughtsone'" | grep -q 1; then
+  sudo -u postgres psql -c "CREATE ROLE draughtsone LOGIN PASSWORD 'draughtsone'"
+else
+  sudo -u postgres psql -c "ALTER ROLE draughtsone WITH LOGIN PASSWORD 'draughtsone'"
+fi
+
+if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='draughtsone'" | grep -q 1; then
+  sudo -u postgres createdb --owner=draughtsone draughtsone
+fi
+
 for attempt in {1..30}; do
-  if sudo docker compose -f infra/docker-compose.yml exec -T postgres pg_isready -U draughtsone -d draughtsone >/dev/null 2>&1; then
+  if pg_isready -h 127.0.0.1 -U draughtsone -d draughtsone >/dev/null 2>&1; then
     break
   fi
   if [[ "$attempt" == "30" ]]; then

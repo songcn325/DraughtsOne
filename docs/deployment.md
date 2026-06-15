@@ -46,12 +46,12 @@ The repository is deployed at `/home/ubuntu/DraughtsOne-main`. Preserve the
 server-provided `scan_linux`, `scan.ini`, and `data/` files when updating the
 application source.
 
-Install Nginx and Docker once if they are not already present:
+Install Nginx once if it is not already present. The deployment script installs
+Ubuntu PostgreSQL automatically when needed:
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y nginx
-# Install Docker Engine and its Compose plugin using Docker's Ubuntu guide.
 ```
 
 Create the production environment:
