@@ -3,6 +3,7 @@ import type { PatchMeRequest, User } from "@draughtsone/shared";
 
 let demoUser: User = {
   id: "demo-user",
+  accountType: "guest",
   username: "demo",
   email: "demo@draughtsone.app",
   emailVerified: true,

@@ -11,6 +11,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { MatchHistoryPage } from "./pages/MatchHistoryPage";
 import { PlayHallPage } from "./pages/PlayHallPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { OnlineGamePage } from "./pages/OnlineGamePage";
 import { TrainPage } from "./pages/TrainPage";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/train" element={<TrainPage />} />
             <Route path="/play" element={<PlayHallPage />} />
             <Route path="/game/:gameId" element={<GameBoardPage />} />
+            <Route path="/online-game/:gameId" element={<OnlineGamePage />} />
             <Route path="/ai" element={<AiProfilePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/profile" element={<ProfilePage />} />

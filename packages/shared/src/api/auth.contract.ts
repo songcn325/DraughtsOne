@@ -2,7 +2,8 @@ import type { ApiEndpoint, EmptyRequest, ID, ISODateTime } from "../common.js";
 
 export type User = {
   id: ID;
-  username: string;
+  accountType: "guest" | "registered";
+  username?: string;
   email?: string;
   phoneNumber?: string;
   emailVerified: boolean;
@@ -17,6 +18,10 @@ export type AuthSession = {
   user: User;
   accessToken: string;
   expiresAt: ISODateTime;
+};
+
+export type GuestSessionRequest = {
+  displayName?: string;
 };
 
 export type RegisterRequest = {
@@ -90,6 +95,7 @@ export type LogoutResult = {
 };
 
 export type AuthApiContract = {
+  "POST /auth/guest": ApiEndpoint<GuestSessionRequest, AuthSession>;
   "POST /auth/register": ApiEndpoint<RegisterRequest, AuthSession>;
   "POST /auth/login": ApiEndpoint<LoginRequest, AuthSession>;
   "POST /auth/verification-code/send": ApiEndpoint<SendVerificationCodeRequest, SendVerificationCodeResult>;

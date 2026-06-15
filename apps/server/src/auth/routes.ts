@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type {
   AuthSession,
+  GuestSessionRequest,
   LoginRequest,
   RegisterRequest,
   RequestPasswordResetRequest,
@@ -9,9 +10,11 @@ import type {
   VerificationCodeLoginRequest,
   User
 } from "@draughtsone/shared";
+import { prisma } from "../db/prisma.js";
 
 const demoUser: User = {
   id: "demo-user",
+  accountType: "guest",
   username: "demo",
   email: "demo@draughtsone.app",
   emailVerified: true,
@@ -22,6 +25,37 @@ const demoUser: User = {
 };
 
 export function registerAuthRoutes(app: FastifyInstance) {
+  app.post<{ Body: GuestSessionRequest }>("/auth/guest", async (request) => {
+    const suffix = Math.floor(1000 + Math.random() * 9000);
+    const displayName = request.body?.displayName?.trim().slice(0, 30) || `Guest ${suffix}`;
+    const user = await prisma.user.create({
+      data: {
+        accountType: "guest",
+        displayName,
+        rating: 1200,
+        ratingDeviation: 350
+      }
+    });
+    const token = app.jwt.sign({ sub: user.id, kind: "guest" }, { expiresIn: "30d" });
+    return {
+      ok: true,
+      data: {
+        user: {
+          id: user.id,
+          accountType: "guest",
+          displayName: user.displayName,
+          avatarUrl: user.avatarUrl ?? undefined,
+          emailVerified: user.emailVerified,
+          phoneVerified: user.phoneVerified,
+          rating: user.rating,
+          createdAt: user.createdAt.toISOString()
+        },
+        accessToken: token,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      } satisfies AuthSession
+    };
+  });
+
   app.post<{ Body: RegisterRequest }>("/auth/register", async (request) => {
     const user = {
       ...demoUser,

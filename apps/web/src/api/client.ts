@@ -1,4 +1,4 @@
-import type { AiBestMoveRequest, AiBestMoveView, ApiResponse, DailyTrainingView, LearnPath, UserProfileView } from "@draughtsone/shared";
+import type { AiBestMoveRequest, AiBestMoveView, ApiResponse, AuthSession, DailyTrainingView, GuestSessionRequest, LearnPath, UserProfileView } from "@draughtsone/shared";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? "http://localhost:4000" : "/api");
 
@@ -20,6 +20,7 @@ export async function apiPost<TRequest, TResponse>(path: string, body: TRequest,
 }
 
 export const api = {
+  guestSession: (request: GuestSessionRequest = {}) => apiPost<GuestSessionRequest, AuthSession>("/auth/guest", request),
   me: () => apiGet<UserProfileView>("/me"),
   learnPath: () => apiGet<LearnPath>("/learn/path"),
   dailyTraining: () => apiGet<DailyTrainingView>("/train/daily"),
