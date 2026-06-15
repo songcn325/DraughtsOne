@@ -1,6 +1,6 @@
 import type { MatchmakingStatusPayload } from "@draughtsone/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { CreateGameModal } from "../components/CreateGameModal";
 import { TactileButton } from "../components/TactileButton";
 import { useLanguage } from "../i18n";
@@ -14,7 +14,10 @@ export function PlayHallPage() {
   const [queueInfo, setQueueInfo] = useState<MatchmakingStatusPayload>();
   const [matchmakingError, setMatchmakingError] = useState<string>();
   const socketRef = useRef<GameSocket>();
+  const autoMatchStartedRef = useRef(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const autoMatch = searchParams.get("match") === "online";
   const roomCode = useMemo(() => `DO-${Math.floor(1000 + Math.random() * 9000)}`, []);
 
   useEffect(() => () => {
@@ -62,6 +65,12 @@ export function PlayHallPage() {
       setMatchmakingStatus("idle");
     }
   }
+
+  useEffect(() => {
+    if (!autoMatch || autoMatchStartedRef.current) return;
+    autoMatchStartedRef.current = true;
+    void startMatchmaking();
+  }, [autoMatch]);
 
   function cancelMatchmaking() {
     socketRef.current?.emit("matchmaking:cancel");

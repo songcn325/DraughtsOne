@@ -143,6 +143,10 @@ export function OnlineGamePage() {
     navigate("/play");
   }
 
+  function startNewOnlineGame() {
+    navigate("/play?match=online");
+  }
+
   function confirmResign() {
     socketRef.current?.emit("game:resign", { gameId });
     setResignConfirmOpen(false);
@@ -187,9 +191,11 @@ export function OnlineGamePage() {
           {moveError && <p className="mt-3 rounded-lg bg-error/10 p-3 font-bold text-error">{moveError}</p>}
           {connectionMessage && <p className="mt-3 rounded-lg bg-secondary-fixed/35 p-3 font-bold">{connectionMessage}</p>}
           <div className="mt-5 grid grid-cols-2 gap-3">
-            {!game.state.winner ? (
+            {!gameHasEnded ? (
               <TactileButton tone="danger" onClick={() => setResignConfirmOpen(true)}>{t("resign")}</TactileButton>
-            ) : <span />}
+            ) : (
+              <TactileButton onClick={startNewOnlineGame}>{t("newOnlineGame")}</TactileButton>
+            )}
             <TactileButton tone="surface" onClick={exitGame}>{t("exitGame")}</TactileButton>
           </div>
         </section>
