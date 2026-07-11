@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { saveAuthSession } from "../auth/session";
+import draughtsOneLogo from "../assets/draughtsone-logo-white.png";
 import { TactileButton } from "../components/TactileButton";
 import { useLanguage } from "../i18n";
 
@@ -86,8 +87,7 @@ export function LoginPage() {
     <div className="mx-auto -mt-8 grid min-h-[calc(100vh-9rem)] max-w-md place-items-center">
       <section className="w-full overflow-hidden rounded-[2rem] bg-surface-container-low shadow-[0_24px_80px_rgba(45,47,47,0.12)]">
         <div className="grid place-items-center bg-gradient-to-br from-primary to-[#78f235] px-6 py-10 text-white">
-          <div className="grid h-20 w-20 place-items-center rounded-3xl bg-white/20 text-4xl font-black">D</div>
-          <h1 className="mt-4 text-3xl font-black">DraughtsOne</h1>
+          <img src={draughtsOneLogo} alt="DraughtsOne" className="h-auto w-64 max-w-[82%] drop-shadow-[0_8px_18px_rgba(0,0,0,0.16)]" />
         </div>
         <div className="p-6">
         <div className="flex rounded-full bg-surface-container-lowest p-1">
