@@ -131,9 +131,10 @@ export function registerAuthRoutes(app: FastifyInstance) {
     ok: true,
     data: {
       channel: "email",
-      deliveryTarget: maskDeliveryTarget(request.body.email ?? "account@draughtsone.app"),
+      deliveryTarget: maskDeliveryTarget(request.body.email ?? "your account email"),
       expiresInSeconds: 300,
-      resendAvailableInSeconds: 60
+      resendAvailableInSeconds: 60,
+      supportedInCurrentMvp: false
     }
   }));
 

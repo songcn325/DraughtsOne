@@ -79,6 +79,7 @@ export type RequestPasswordResetResult = {
   deliveryTarget: string;
   expiresInSeconds: number;
   resendAvailableInSeconds: number;
+  supportedInCurrentMvp: boolean;
 };
 
 export type ResetPasswordRequest = PasswordResetIdentity & {
