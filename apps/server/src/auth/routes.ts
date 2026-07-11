@@ -52,23 +52,25 @@ export function registerAuthRoutes(app: FastifyInstance) {
       return { ok: false, error: { code: "VALIDATION_ERROR", message: "Please check the registration form.", fieldErrors } };
     }
 
-    const verified = await consumeVerificationCode(email, "register", request.body.verification?.code ?? "");
-    if (!verified) {
-      reply.code(400);
-      return { ok: false, error: { code: "VALIDATION_ERROR", message: "The email verification code is invalid or expired.", fieldErrors: { verification: "Invalid or expired code." } } };
-    }
-
     const existing = await prisma.user.findFirst({ where: { OR: [{ username }, { email }] } });
     if (existing) {
+      const emailExists = existing.email === email;
       reply.code(409);
       return {
         ok: false,
         error: {
           code: "ACCOUNT_ALREADY_EXISTS",
-          message: existing.username === username ? "This username is already taken." : "This email is already registered.",
-          fieldErrors: existing.username === username ? { username: "Already taken." } : { email: "Already registered." }
+          message: emailExists ? "You already have an account with this email. Please log in instead." : "This username is already taken.",
+          fieldErrors: emailExists ? { email: "Already registered. Please log in instead." } : { username: "Already taken." },
+          details: emailExists ? { loginInstead: true, email } : undefined
         }
       };
+    }
+
+    const verified = await consumeVerificationCode(email, "register", request.body.verification?.code ?? "");
+    if (!verified) {
+      reply.code(400);
+      return { ok: false, error: { code: "VALIDATION_ERROR", message: "The email verification code is invalid or expired.", fieldErrors: { verification: "Invalid or expired code." } } };
     }
 
     const passwordHash = await hashPassword(password);

@@ -56,6 +56,9 @@ export function LoginPage() {
 
     if (!response.ok) {
       setError(response.error.message);
+      if (mode === "register" && response.error.details?.loginInstead) {
+        setMessage(t("loginInsteadSuggestion"));
+      }
       return;
     }
 
@@ -137,6 +140,11 @@ export function LoginPage() {
           {mode === "register" && passwordFocused && <p className="text-sm font-semibold text-on-surface-variant">{t("passwordRequirement")}</p>}
           {error && <p className="rounded-lg bg-error/10 p-3 font-bold text-error">{error}</p>}
           {message && <p className="rounded-lg bg-primary-fixed/40 p-3 font-bold text-primary">{message}</p>}
+          {mode === "register" && message === t("loginInsteadSuggestion") && (
+            <button type="button" onClick={() => { setUsername(email); switchMode("login"); }} className="w-full rounded-full bg-surface-container-lowest px-5 py-3 font-black text-primary">
+              {t("goToLogin")}
+            </button>
+          )}
           <TactileButton className="w-full" disabled={loading}>{loading ? t("pleaseWait") : mode === "forgot" ? (resetRequested ? t("resetPassword") : t("sendRecoveryInstructions")) : t("continue")}</TactileButton>
         </form>
         {mode === "login" && (
