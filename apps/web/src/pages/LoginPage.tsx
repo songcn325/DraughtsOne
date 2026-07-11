@@ -16,6 +16,7 @@ export function LoginPage() {
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
   const [loading, setLoading] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -56,9 +57,11 @@ export function LoginPage() {
           <button type="button" onClick={() => setMode("login")} className={`flex-1 rounded-full px-4 py-2 font-black ${mode === "login" ? "bg-primary-fixed text-primary" : ""}`}>{t("login")}</button>
           <button type="button" onClick={() => setMode("register")} className={`flex-1 rounded-full px-4 py-2 font-black ${mode === "register" ? "bg-primary-fixed text-primary" : ""}`}>{t("register")}</button>
         </div>
-        <p className="mt-4 text-sm font-semibold text-on-surface-variant">
-          {mode === "register" ? t("registrationEmailNote") : mode === "forgot" ? t("forgotPasswordHelp") : t("loginHelp")}
-        </p>
+        {mode !== "register" && (
+          <p className="mt-4 text-sm font-semibold text-on-surface-variant">
+            {mode === "forgot" ? t("forgotPasswordHelp") : t("loginHelp")}
+          </p>
+        )}
         <form className="mt-6 space-y-4" onSubmit={(event) => void submit(event)}>
           {mode !== "forgot" && (
             <input value={username} onChange={(event) => setUsername(event.target.value)} className="w-full rounded-full bg-surface-container-lowest px-5 py-4 font-semibold outline-none" placeholder={t("usernameOrEmail")} autoComplete="username" />
@@ -73,9 +76,18 @@ export function LoginPage() {
             <input value={email} onChange={(event) => setEmail(event.target.value)} className="w-full rounded-full bg-surface-container-lowest px-5 py-4 font-semibold outline-none" placeholder={t("emailOrUsername")} autoComplete="email" />
           )}
           {mode !== "forgot" && (
-            <input value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-full bg-surface-container-lowest px-5 py-4 font-semibold outline-none" placeholder={t("password")} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} />
+            <input
+              value={password}
+              onBlur={() => setPasswordFocused(false)}
+              onChange={(event) => setPassword(event.target.value)}
+              onFocus={() => setPasswordFocused(true)}
+              className="w-full rounded-full bg-surface-container-lowest px-5 py-4 font-semibold outline-none"
+              placeholder={t("password")}
+              type="password"
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+            />
           )}
-          {mode === "register" && <p className="text-sm font-semibold text-on-surface-variant">{t("passwordRequirement")}</p>}
+          {mode === "register" && passwordFocused && <p className="text-sm font-semibold text-on-surface-variant">{t("passwordRequirement")}</p>}
           {error && <p className="rounded-lg bg-error/10 p-3 font-bold text-error">{error}</p>}
           {message && <p className="rounded-lg bg-primary-fixed/40 p-3 font-bold text-primary">{message}</p>}
           <TactileButton className="w-full" disabled={loading}>{loading ? t("pleaseWait") : mode === "forgot" ? t("sendRecoveryInstructions") : t("continue")}</TactileButton>
