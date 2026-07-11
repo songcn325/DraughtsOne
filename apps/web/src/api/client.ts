@@ -1,26 +1,32 @@
-import type { AiBestMoveRequest, AiBestMoveView, ApiResponse, DailyTrainingView, LearnPath, UserProfileView } from "@draughtsone/shared";
+import type { AiBestMoveRequest, AiBestMoveView, ApiResponse, AuthSession, DailyTrainingView, GuestSessionRequest, LearnPath, LoginRequest, RegisterRequest, UserProfileView } from "@draughtsone/shared";
+import { authHeader } from "../auth/session";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? "http://localhost:4000" : "/api");
 
 export async function apiGet<T>(path: string): Promise<ApiResponse<T>> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" }
+    headers: { "Content-Type": "application/json", ...authHeader() }
   });
   return response.json();
 }
 
-export async function apiPost<TRequest, TResponse>(path: string, body: TRequest): Promise<ApiResponse<TResponse>> {
+export async function apiPost<TRequest, TResponse>(path: string, body: TRequest, signal?: AbortSignal): Promise<ApiResponse<TResponse>> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    headers: { "Content-Type": "application/json", ...authHeader() },
+    body: JSON.stringify(body),
+    signal
   });
   return response.json();
 }
 
 export const api = {
+  guestSession: (request: GuestSessionRequest = {}) => apiPost<GuestSessionRequest, AuthSession>("/auth/guest", request),
+  register: (request: RegisterRequest) => apiPost<RegisterRequest, AuthSession>("/auth/register", request),
+  login: (request: LoginRequest) => apiPost<LoginRequest, AuthSession>("/auth/login", request),
+  logout: () => apiPost<Record<string, never>, { loggedOut: true }>("/auth/logout", {}),
   me: () => apiGet<UserProfileView>("/me"),
   learnPath: () => apiGet<LearnPath>("/learn/path"),
   dailyTraining: () => apiGet<DailyTrainingView>("/train/daily"),
-  analyzePosition: (request: AiBestMoveRequest) => apiPost<AiBestMoveRequest, AiBestMoveView>("/ai/best-move", request)
+  analyzePosition: (request: AiBestMoveRequest, signal?: AbortSignal) => apiPost<AiBestMoveRequest, AiBestMoveView>("/ai/best-move", request, signal)
 };

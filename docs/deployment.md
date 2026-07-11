@@ -33,6 +33,7 @@ Internet -> Nginx :80/:443
   /              -> /var/www/draughtsone (Vite build)
   /api/*         -> Fastify on 127.0.0.1:4000
   /socket.io/*   -> Socket.IO on 127.0.0.1:4000
+Fastify          -> PostgreSQL on 127.0.0.1:5432
 Fastify          -> scan_linux Hub subprocess
 ```
 
@@ -45,7 +46,8 @@ The repository is deployed at `/home/ubuntu/DraughtsOne-main`. Preserve the
 server-provided `scan_linux`, `scan.ini`, and `data/` files when updating the
 application source.
 
-Install Nginx once if it is not already present:
+Install Nginx once if it is not already present. The deployment script installs
+Ubuntu PostgreSQL automatically when needed:
 
 ```bash
 sudo apt-get update
@@ -120,8 +122,9 @@ the required ICP filing before enabling public domain access.
 Keep `.env.production`, `scan_linux`, `scan.ini`, and `data/` outside Git
 changes. Pull the desired commit and run `./infra/deploy-tencent.sh` again.
 
-Active rooms currently use in-memory storage, so restarting the service clears
-live rooms. Schedule deployments when no match is in progress.
+Guest identities, games, and moves are persisted in PostgreSQL. The active
+matchmaking queue remains in memory for the single-server MVP, so a deployment
+cancels searches that have not yet produced a game.
 
 ## Required Production Settings
 
@@ -140,5 +143,5 @@ live rooms. Schedule deployments when no match is in progress.
 | --- | --- |
 | 50+ simultaneous matches | Replace memory room store with Redis |
 | Multiple backend servers | Add Socket.IO Redis adapter |
-| Restart must not lose active games | Persist active state more frequently |
+| Restart must preserve matchmaking searches | Store matchmaking tickets in Redis |
 | Commercial launch | Add stronger logging, audit trails, anti-cheat, and operations tooling |

@@ -16,7 +16,47 @@ test -f "$REPO_DIR/.env.production" || {
   exit 1
 }
 
+if ! grep -q '^DATABASE_URL=' "$REPO_DIR/.env.production"; then
+  echo 'DATABASE_URL=postgresql://draughtsone:draughtsone@127.0.0.1:5432/draughtsone' >> "$REPO_DIR/.env.production"
+fi
+
+set -a
+# shellcheck disable=SC1091
+source "$REPO_DIR/.env.production"
+set +a
+
 npm ci
+npm run db:generate -w @draughtsone/server
+
+if ! command -v psql >/dev/null 2>&1; then
+  sudo apt-get update
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql postgresql-contrib
+fi
+
+sudo systemctl enable --now postgresql
+
+if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='draughtsone'" | grep -q 1; then
+  sudo -u postgres psql -c "CREATE ROLE draughtsone LOGIN PASSWORD 'draughtsone'"
+else
+  sudo -u postgres psql -c "ALTER ROLE draughtsone WITH LOGIN PASSWORD 'draughtsone'"
+fi
+
+if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='draughtsone'" | grep -q 1; then
+  sudo -u postgres createdb --owner=draughtsone draughtsone
+fi
+
+for attempt in {1..30}; do
+  if pg_isready -h 127.0.0.1 -U draughtsone -d draughtsone >/dev/null 2>&1; then
+    break
+  fi
+  if [[ "$attempt" == "30" ]]; then
+    echo "PostgreSQL did not become ready." >&2
+    exit 1
+  fi
+  sleep 1
+done
+
+npx prisma db push --schema apps/server/prisma/schema.prisma
 npm run typecheck
 npm test
 npm run build

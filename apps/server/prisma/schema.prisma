@@ -9,15 +9,19 @@ datasource db {
 
 model User {
   id               String             @id @default(cuid())
-  username         String             @unique
+  accountType      String             @default("guest") @map("account_type")
+  username         String?            @unique
   email            String?            @unique
   phoneNumber      String?            @unique @map("phone_number")
   emailVerified    Boolean            @default(false) @map("email_verified")
   phoneVerified    Boolean            @default(false) @map("phone_verified")
-  passwordHash     String             @map("password_hash")
+  passwordHash     String?            @map("password_hash")
   displayName      String             @map("display_name")
   avatarUrl        String?            @map("avatar_url")
   rating           Int                @default(1200)
+  ratingDeviation  Int                @default(350) @map("rating_deviation")
+  gamesPlayed      Int                @default(0) @map("games_played")
+  lastSeenAt       DateTime           @default(now()) @map("last_seen_at")
   createdAt        DateTime           @default(now()) @map("created_at")
   learningProgress LearningProgress[]
   trainingAttempts TrainingAttempt[]
@@ -62,6 +66,8 @@ model Game {
   id            String     @id @default(cuid())
   roomCode      String     @unique @map("room_code")
   status        String
+  opponentType  String     @default("human") @map("opponent_type")
+  visibility    String     @default("quick_match")
   playerWhiteId String?    @map("player_white_id")
   playerBlackId String?    @map("player_black_id")
   winnerId      String?    @map("winner_id")
@@ -73,6 +79,7 @@ model Game {
   playerWhite   User?      @relation("white_games", fields: [playerWhiteId], references: [id])
   playerBlack   User?      @relation("black_games", fields: [playerBlackId], references: [id])
   moves         GameMove[]
+  createdAt     DateTime   @default(now()) @map("created_at")
 }
 
 model GameMove {
@@ -85,4 +92,6 @@ model GameMove {
   createdAt       DateTime @default(now()) @map("created_at")
   game            Game     @relation(fields: [gameId], references: [id])
   player          User     @relation(fields: [playerId], references: [id])
+
+  @@unique([gameId, moveNumber])
 }
