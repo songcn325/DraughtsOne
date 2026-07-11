@@ -10,8 +10,10 @@ import type {
   VerificationCodeLoginRequest
 } from "@draughtsone/shared";
 import { prisma } from "../db/prisma.js";
+import { sendEmail } from "./email.js";
 import { hashPassword, verifyPassword } from "./password.js";
 import { userView } from "./userView.js";
+import { consumeVerificationCode, createVerificationCode, normalizeVerificationTarget, storeVerificationCode } from "./verification.js";
 
 const SESSION_DAYS = 30;
 
@@ -40,11 +42,20 @@ export function registerAuthRoutes(app: FastifyInstance) {
     if (!username || username.length < 3) fieldErrors.username = "Username must be at least 3 characters.";
     if (!email || !email.includes("@")) fieldErrors.email = "Enter a valid email address.";
     if (!displayName) fieldErrors.displayName = "Display name is required.";
-    if (password.length < 8) fieldErrors.password = "Password must be at least 8 characters.";
+    if (!isStrongPassword(password)) fieldErrors.password = "Password must be at least 8 characters and include uppercase, lowercase, and a number.";
+    if (request.body.verification?.channel !== "email" || normalizeVerificationTarget(request.body.verification.target) !== email) {
+      fieldErrors.verification = "Please verify this email address first.";
+    }
 
     if (Object.keys(fieldErrors).length > 0) {
       reply.code(400);
       return { ok: false, error: { code: "VALIDATION_ERROR", message: "Please check the registration form.", fieldErrors } };
+    }
+
+    const verified = await consumeVerificationCode(email, "register", request.body.verification?.code ?? "");
+    if (!verified) {
+      reply.code(400);
+      return { ok: false, error: { code: "VALIDATION_ERROR", message: "The email verification code is invalid or expired.", fieldErrors: { verification: "Invalid or expired code." } } };
     }
 
     const existing = await prisma.user.findFirst({ where: { OR: [{ username }, { email }] } });
@@ -68,7 +79,7 @@ export function registerAuthRoutes(app: FastifyInstance) {
       username,
       email,
       phoneNumber: request.body.phoneNumber?.trim() || null,
-      emailVerified: request.body.verification?.channel === "email",
+      emailVerified: true,
       phoneVerified: request.body.verification?.channel === "sms",
       passwordHash,
       displayName
@@ -99,16 +110,36 @@ export function registerAuthRoutes(app: FastifyInstance) {
     return { ok: true, data: createSession(app, user, "registered") };
   });
 
-  app.post<{ Body: SendVerificationCodeRequest }>("/auth/verification-code/send", async (request) => ({
-    ok: true,
-    data: {
-      channel: request.body.channel,
-      deliveryTarget: maskDeliveryTarget(request.body.target),
-      expiresInSeconds: 300,
-      resendAvailableInSeconds: 60,
-      supportedInCurrentMvp: request.body.channel === "email"
+  app.post<{ Body: SendVerificationCodeRequest }>("/auth/verification-code/send", async (request, reply) => {
+    if (request.body.channel !== "email") {
+      reply.code(400);
+      return { ok: false, error: { code: "VALIDATION_ERROR", message: "Only email verification is supported right now." } };
     }
-  }));
+    const target = normalizeEmail(request.body.target);
+    if (!target.includes("@")) {
+      reply.code(400);
+      return { ok: false, error: { code: "VALIDATION_ERROR", message: "Enter a valid email address." } };
+    }
+
+    const code = createVerificationCode();
+    await storeVerificationCode(target, request.body.purpose === "reset_password" ? "reset_password" : "register", code);
+    const delivered = await sendEmail({
+      to: target,
+      subject: request.body.purpose === "reset_password" ? "Reset your DraughtsOne password" : "Verify your DraughtsOne email",
+      text: `Your DraughtsOne verification code is ${code}. It expires in 10 minutes.`
+    });
+
+    return {
+      ok: true,
+      data: {
+        channel: "email",
+        deliveryTarget: maskDeliveryTarget(target),
+        expiresInSeconds: 600,
+        resendAvailableInSeconds: 60,
+        supportedInCurrentMvp: delivered
+      }
+    };
+  });
 
   app.post<{ Body: VerificationCodeLoginRequest }>("/auth/verification-code/login", async (request) => {
     const target = request.body.target.trim().toLowerCase();
@@ -127,21 +158,47 @@ export function registerAuthRoutes(app: FastifyInstance) {
     return { ok: true, data: createSession(app, user, "registered") };
   });
 
-  app.post<{ Body: RequestPasswordResetRequest }>("/auth/password-reset/request", async (request) => ({
-    ok: true,
-    data: {
-      channel: "email",
-      deliveryTarget: maskDeliveryTarget(request.body.email ?? "your account email"),
-      expiresInSeconds: 300,
-      resendAvailableInSeconds: 60,
-      supportedInCurrentMvp: false
+  app.post<{ Body: RequestPasswordResetRequest }>("/auth/password-reset/request", async (request) => {
+    const identity = (request.body.email ?? request.body.username).trim().toLowerCase();
+    const user = await prisma.user.findFirst({ where: { OR: [{ email: identity }, { username: identity }] } });
+    const target = user?.email;
+    let delivered = false;
+    if (target) {
+      const code = createVerificationCode();
+      await storeVerificationCode(target, "reset_password", code);
+      delivered = await sendEmail({
+        to: target,
+        subject: "Reset your DraughtsOne password",
+        text: `Your DraughtsOne password reset code is ${code}. It expires in 10 minutes.`
+      });
     }
-  }));
+    return {
+      ok: true,
+      data: {
+        channel: "email",
+        deliveryTarget: target ? maskDeliveryTarget(target) : maskDeliveryTarget("your account email"),
+        expiresInSeconds: 600,
+        resendAvailableInSeconds: 60,
+        supportedInCurrentMvp: delivered
+      }
+    };
+  });
 
-  app.post<{ Body: ResetPasswordRequest }>("/auth/password-reset/confirm", async () => ({
-    ok: true,
-    data: { passwordReset: true }
-  }));
+  app.post<{ Body: ResetPasswordRequest }>("/auth/password-reset/confirm", async (request, reply) => {
+    const identity = (request.body.email ?? request.body.username).trim().toLowerCase();
+    const user = await prisma.user.findFirst({ where: { OR: [{ email: identity }, { username: identity }] } });
+    if (!user?.email || !isStrongPassword(request.body.newPassword)) {
+      reply.code(400);
+      return { ok: false, error: { code: "VALIDATION_ERROR", message: "The reset request is invalid." } };
+    }
+    const verified = await consumeVerificationCode(user.email, "reset_password", request.body.code);
+    if (!verified) {
+      reply.code(400);
+      return { ok: false, error: { code: "VALIDATION_ERROR", message: "The password reset code is invalid or expired." } };
+    }
+    await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(request.body.newPassword) } });
+    return { ok: true, data: { passwordReset: true } };
+  });
 
   app.post("/auth/logout", async () => ({
     ok: true,
@@ -174,6 +231,10 @@ function normalizeUsername(value: string) {
 
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
+}
+
+function isStrongPassword(value: string) {
+  return value.length >= 8 && /[A-Z]/.test(value) && /[a-z]/.test(value) && /\d/.test(value);
 }
 
 function maskDeliveryTarget(value: string): string {

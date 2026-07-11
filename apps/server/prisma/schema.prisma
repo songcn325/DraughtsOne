@@ -30,6 +30,20 @@ model User {
   gameMoves        GameMove[]
 }
 
+model EmailVerificationCode {
+  id         String    @id @default(cuid())
+  target     String
+  purpose    String
+  codeHash   String    @map("code_hash")
+  attempts   Int       @default(0)
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([target, purpose, consumedAt, expiresAt])
+  @@map("EmailVerificationCode")
+}
+
 model LearningProgress {
   id          String    @id @default(cuid())
   userId      String    @map("user_id")
