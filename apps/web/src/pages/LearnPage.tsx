@@ -131,15 +131,21 @@ function TeachingBoard({ kind }: { kind: "board" | "pieces" }) {
 
   if (kind === "pieces") {
     return (
-      <div className="relative mx-auto mt-10 grid w-[330px] max-w-full grid-cols-10 overflow-hidden bg-[#dedede]">
-        {cells.map((cell) => (
-          <div key={`${cell.row}-${cell.col}`} className={`aspect-square ${cell.dark ? "bg-[#d9d9d9]" : "bg-white"}`} />
-        ))}
-        <div className="absolute left-[27%] top-[45%] text-lg font-black text-[#008246]">{t("man")}</div>
-        <div className="absolute left-[25%] top-[51%] h-7 w-7 rounded-full bg-white shadow-[inset_0_0_0_2px_#eeeeee,0_1px_2px_rgba(0,0,0,0.18)]" />
-        <div className="absolute right-[19%] top-[-4px] text-lg font-black text-[#008246]">{t("king")}</div>
-        <div className="absolute right-[21%] top-[2%] grid h-7 w-7 place-items-center rounded-full bg-white shadow-[inset_0_0_0_2px_#eeeeee,0_1px_2px_rgba(0,0,0,0.18)]">
-          <span className="text-xs font-black text-[#d7d7d7]">◎</span>
+      <div className="relative mx-auto mt-10 w-full max-w-[420px]">
+        <div className="grid grid-cols-10 overflow-hidden bg-[#dedede]">
+          {cells.map((cell) => (
+            <div key={`${cell.row}-${cell.col}`} className={`aspect-square ${cell.dark ? "bg-[#d9d9d9]" : "bg-white"}`} />
+          ))}
+        </div>
+        <div className="absolute left-[22%] top-[34%] text-xl font-black text-[#008246] sm:text-2xl">{t("man")}</div>
+        <div className="absolute left-[25%] top-[43%] h-9 w-9 rounded-full bg-white shadow-[inset_0_-3px_6px_rgba(0,0,0,0.08),0_3px_5px_rgba(0,0,0,0.18)] sm:h-11 sm:w-11" />
+        <div className="absolute right-[17%] top-[2%] text-xl font-black text-[#008246] sm:text-2xl">{t("king")}</div>
+        <div className="absolute right-[20%] top-[12%] grid h-10 w-10 place-items-center rounded-full bg-white shadow-[inset_0_-3px_6px_rgba(0,0,0,0.08),0_3px_5px_rgba(0,0,0,0.18)] sm:h-12 sm:w-12">
+          <span className="grid h-[58%] w-[58%] place-items-center rounded-full border border-white/70">
+            <span className="grid h-[88%] w-[88%] place-items-center rounded-full bg-white/95 shadow-[0_1px_4px_rgba(0,0,0,0.16)]">
+              <span className="material-symbols-outlined fill king-symbol text-[#d3a600]" aria-hidden="true">crown</span>
+            </span>
+          </span>
         </div>
       </div>
     );
@@ -147,7 +153,7 @@ function TeachingBoard({ kind }: { kind: "board" | "pieces" }) {
 
   return (
     <div className="mx-auto mt-10 rounded-[12px] border border-[#e2e2e2] p-2">
-      <div className="grid w-[330px] max-w-full grid-cols-10 overflow-hidden rounded-[10px] bg-[#dedede]">
+      <div className="grid w-full max-w-[420px] grid-cols-10 overflow-hidden rounded-[10px] bg-[#dedede]">
         {cells.map((cell) => (
           <div key={`${cell.row}-${cell.col}`} className={`relative aspect-square ${cell.dark ? "bg-[#d9d9d9]" : "bg-white"}`}>
             {cell.black && <span className="absolute left-1/2 top-1/2 h-[74%] w-[74%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#333]" />}
@@ -165,9 +171,9 @@ function LessonDetail({ lessonId, onBack, onNext }: { lessonId: LessonId; onBack
   const isPieces = lessonId === "pieces";
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="rounded-[2rem] bg-white shadow-[0_8px_24px_rgba(45,47,47,0.04)]">
       <LessonHeader title={t(detail.titleKey)} progress={detail.progress} onBack={onBack} />
-      <main className="px-6 pb-28">
+      <main className="mx-auto max-w-2xl px-6 pb-28">
         <TeachingBoard kind={detail.kind} />
         <section className="mt-10 flex gap-3 rounded-[32px] border-2 border-[#e2e2e2] bg-[#f3f3f3] px-5 py-5 shadow-[0_4px_0_rgba(0,0,0,0.08)]">
           <img src={bulbIcon} alt="" className="mt-1 h-5 w-5" />
@@ -191,6 +197,7 @@ function LessonDetail({ lessonId, onBack, onNext }: { lessonId: LessonId; onBack
 export function LearnPage() {
   const { t } = useLanguage();
   const [activeLesson, setActiveLesson] = useState<LessonId | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<LessonId | null>(null);
 
   if (activeLesson) {
     const order = [...chapterOne, ...chapterTwo].map((lesson) => lesson.id);
@@ -199,29 +206,47 @@ export function LearnPage() {
       <LessonDetail
         lessonId={activeLesson}
         onBack={() => setActiveLesson(null)}
-        onNext={() => setActiveLesson(nextLesson)}
+        onNext={() => {
+          setSelectedLesson(nextLesson);
+          setActiveLesson(nextLesson);
+        }}
       />
     );
   }
 
   return (
-    <div className="min-h-screen bg-white pb-28">
-      <LessonHeader title={t("learn")} onBack={() => window.history.back()} />
-      <main className="space-y-8 px-5 py-9">
+    <div className="rounded-[2rem] bg-white p-5 shadow-[0_8px_24px_rgba(45,47,47,0.04)] sm:p-7">
+      <main className="space-y-8">
         <section className="space-y-5">
           <ChapterTitle icon={chapterBook} title={t("chapterOneTitle")} />
-          <div className="grid grid-cols-2 gap-5">
-            {chapterOne.map((lesson, index) => (
-              <LessonTile key={lesson.id} lesson={lesson} active={index === 0} onClick={() => setActiveLesson(lesson.id)} />
+          <div className="grid grid-cols-2 gap-5 lg:max-w-2xl">
+            {chapterOne.map((lesson) => (
+              <LessonTile
+                key={lesson.id}
+                lesson={lesson}
+                active={selectedLesson === lesson.id}
+                onClick={() => {
+                  setSelectedLesson(lesson.id);
+                  setActiveLesson(lesson.id);
+                }}
+              />
             ))}
           </div>
         </section>
 
         <section className="space-y-5">
           <ChapterTitle icon={chapterStar} title={t("chapterTwoTitle")} />
-          <div className="grid grid-cols-2 gap-5">
+          <div className="grid grid-cols-2 gap-5 lg:grid-cols-3">
             {chapterTwo.map((lesson) => (
-              <LessonTile key={lesson.id} lesson={lesson} onClick={() => setActiveLesson(lesson.id)} />
+              <LessonTile
+                key={lesson.id}
+                lesson={lesson}
+                active={selectedLesson === lesson.id}
+                onClick={() => {
+                  setSelectedLesson(lesson.id);
+                  setActiveLesson(lesson.id);
+                }}
+              />
             ))}
           </div>
         </section>
