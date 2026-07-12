@@ -141,7 +141,7 @@ function BoardGrid({ children, framed = false }: { children?: ReactNode; framed?
 function Piece({ row, col, color = "white", king = false }: { row: number; col: number; color?: "white" | "black"; king?: boolean }) {
   return (
     <span
-      className={`absolute grid h-[8.5%] w-[8.5%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full ${
+      className={`absolute z-10 grid h-[8.5%] w-[8.5%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full ${
         color === "black"
           ? "bg-[#333] shadow-[0_3px_5px_rgba(0,0,0,0.18)]"
           : "bg-white shadow-[inset_0_-3px_6px_rgba(0,0,0,0.08),0_3px_5px_rgba(0,0,0,0.18)]"
@@ -209,7 +209,7 @@ function TeachingBoard({ lessonId }: { lessonId: LessonId }) {
   if (lessonId === "manMove") {
     return (
       <BoardGrid>
-        <BoardArrow from={[6, 3]} to={[4, 5]} />
+        <BoardArrow from={[6, 3]} to={[5, 4]} />
         <Piece row={6} col={3} />
       </BoardGrid>
     );
@@ -219,7 +219,7 @@ function TeachingBoard({ lessonId }: { lessonId: LessonId }) {
     return (
       <BoardGrid>
         <Target row={3} col={2} />
-        <Target row={6} col={2} />
+        <Target row={7} col={2} />
         <Piece row={4} col={3} color="black" />
         <Piece row={6} col={3} color="black" />
         <Piece row={5} col={4} />
@@ -233,12 +233,6 @@ function TeachingBoard({ lessonId }: { lessonId: LessonId }) {
         <Target row={0} col={1} />
         <BoardArrow from={[1, 2]} to={[0, 1]} />
         <Piece row={0} col={1} king />
-        <button type="button" className="absolute right-[7%] top-[53%] grid h-10 w-10 place-items-center rounded-lg bg-[#008246] text-white shadow-[0_4px_0_#006738]" aria-label={t("playAnimation")}>
-          <span className="material-symbols-outlined fill">play_arrow</span>
-        </button>
-        <button type="button" className="absolute right-[7%] top-[69%] grid h-8 w-8 place-items-center rounded-lg bg-[#eef8ef] text-[#008246]" aria-label={t("refreshAnimation")}>
-          <span className="material-symbols-outlined text-lg">refresh</span>
-        </button>
       </BoardGrid>
     );
   }
@@ -246,11 +240,11 @@ function TeachingBoard({ lessonId }: { lessonId: LessonId }) {
   if (lessonId === "kingMove") {
     return (
       <BoardGrid>
-        <Piece row={4} col={4} king />
         <BoardArrow from={[4, 4]} to={[1, 1]} />
         <BoardArrow from={[4, 4]} to={[1, 7]} />
         <BoardArrow from={[4, 4]} to={[7, 1]} />
         <BoardArrow from={[4, 4]} to={[7, 7]} />
+        <Piece row={4} col={4} king />
       </BoardGrid>
     );
   }
@@ -275,11 +269,10 @@ function TeachingBoard({ lessonId }: { lessonId: LessonId }) {
           <p className="text-sm font-bold">{t("allOpponentPiecesCaptured")}</p>
         </div>
         <BoardGrid>
-          <Piece row={1} col={1} color="black" />
+          <Piece row={0} col={1} color="black" />
           <Piece row={1} col={0} />
-          <Piece row={2} col={0} />
-          <Piece row={2} col={1} />
-          <Piece row={3} col={0} />
+          <Piece row={1} col={2} />
+          <Piece row={2} col={3} />
         </BoardGrid>
       </div>
     );
