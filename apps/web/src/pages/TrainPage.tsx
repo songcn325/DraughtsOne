@@ -23,9 +23,13 @@ export function TrainPage() {
   const [selected, setSelected] = useState<BoardPoint>();
   const [feedbackKey, setFeedbackKey] = useState<TranslationKey>("task");
   const [feedbackValues, setFeedbackValues] = useState<Record<string, string>>({ title: t("forcedCapture") });
+  const [showHint, setShowHint] = useState(true);
+  const [showSuccess, setShowSuccess] = useState(false);
   const legalMoves = useMemo(() => generateLegalMoves(state), [state]);
   const selectedMoves = selected ? legalMoves.filter((move) => samePoint(move.from, selected)) : [];
   const taskTitle = (taskId: string) => t(taskId === "daily-2" ? "kingLaneControl" : "forcedCapture");
+  const activeTaskIndex = Math.max(0, mockTrainingTasks.findIndex((task) => task.id === activeTask.id));
+  const progressPercent = ((activeTaskIndex + 1) / mockTrainingTasks.length) * 100;
 
   function startTask(taskId: string) {
     const task = mockTrainingTasks.find((candidate) => candidate.id === taskId);
@@ -35,9 +39,25 @@ export function TrainPage() {
     setSelected(undefined);
     setFeedbackKey("task");
     setFeedbackValues({ title: t("forcedCapture") });
+    setShowHint(true);
+    setShowSuccess(false);
+  }
+
+  function resetTask() {
+    setState(activeTask.boardPosition);
+    setSelected(undefined);
+    setFeedbackKey("task");
+    setFeedbackValues({ title: taskTitle(activeTask.id) });
+    setShowSuccess(false);
+  }
+
+  function nextTask() {
+    const next = mockTrainingTasks[(activeTaskIndex + 1) % mockTrainingTasks.length];
+    startTask(next.id);
   }
 
   function handleSquareClick(point: BoardPoint) {
+    if (showSuccess) return;
     const piece = state.board[point.row][point.col];
     if (piece?.color === state.turn) {
       setSelected(point);
@@ -52,10 +72,18 @@ export function TrainPage() {
       setFeedbackValues({});
       return;
     }
+    const expectedMove = activeTask.solution[0];
+    const solved = !expectedMove || (samePoint(expectedMove.from, move.from) && samePoint(expectedMove.to, move.to));
+    if (!solved) {
+      setFeedbackKey("tryAnother");
+      setFeedbackValues({});
+      return;
+    }
     setState(applyMove(state, move));
     setSelected(undefined);
     setFeedbackKey(move.captures.length > 0 ? "goodCapture" : "legalMove");
     setFeedbackValues({});
+    setShowSuccess(true);
   }
 
   return (
@@ -73,12 +101,54 @@ export function TrainPage() {
       </section>
 
       <section className="space-y-4">
+        <section className="rounded-[2rem] bg-surface-container-lowest p-5 shadow-[0_8px_24px_rgba(45,47,47,0.06)] lg:hidden">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-black">{t("dailyPuzzle")}</h2>
+              <p className="mt-1 font-semibold text-on-surface-variant">{t("findBestMove")}</p>
+            </div>
+            <div className="grid h-16 w-16 place-items-center rounded-full bg-[#ffcc00] text-center text-sm font-black text-[#806700]">
+              {t("tasksBadge", { value: mockTrainingTasks.length })}
+            </div>
+          </div>
+          <div className="mt-5 rounded-[1.5rem] border border-[#e2e2e2] p-4">
+            <div className="flex items-center gap-4">
+              <img src={trophyIcon} alt="" className="h-12 w-12 rounded-2xl bg-[#58cc02] p-3" />
+              <div className="flex-1">
+                <div className="flex justify-between text-sm font-black">
+                  <span>{t("dailyProgress")}</span>
+                  <span>{activeTaskIndex + 1}/{mockTrainingTasks.length}</span>
+                </div>
+                <div className="mt-2 h-3 overflow-hidden rounded-full bg-[#d8f3d3]">
+                  <div className="h-full rounded-full bg-[#58cc02]" style={{ width: `${progressPercent}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {showHint && (
+          <section className="rounded-[2rem] bg-surface-container-lowest p-5 shadow-[0_8px_24px_rgba(45,47,47,0.06)] lg:hidden">
+            <p className="font-semibold leading-7 text-on-surface-variant">{t("dailyTrainingHint")}</p>
+          </section>
+        )}
+
         <div className="rounded-[2rem] bg-surface-container-lowest p-4 shadow-[0_8px_24px_rgba(45,47,47,0.06)]">
           <DraughtsBoard state={state} selected={selected} legalTargets={selectedMoves.map((move) => move.to)} onSquareClick={handleSquareClick} />
         </div>
         <p className="rounded-[1.5rem] bg-surface-container-low p-4 font-bold text-on-surface-variant">
           {t(feedbackKey, feedbackKey === "task" ? { title: t("forcedCapture") } : feedbackValues)}
         </p>
+        <div className="grid grid-cols-2 gap-4">
+          <TactileButton onClick={() => setShowHint((visible) => !visible)}>
+            <span className="material-symbols-outlined">emoji_objects</span>
+            {t("hint")}
+          </TactileButton>
+          <TactileButton tone="surface" onClick={resetTask}>
+            <span className="material-symbols-outlined">replay</span>
+            {t("retry")}
+          </TactileButton>
+        </div>
       </section>
       <div className="grid content-start gap-5">
         <section className="rounded-[2rem] bg-surface-container-lowest p-5 shadow-[0_8px_24px_rgba(45,47,47,0.06)]">
@@ -106,6 +176,18 @@ export function TrainPage() {
           </article>
         ))}
       </div>
+      {showSuccess && (
+        <div className="fixed inset-0 z-[90] grid place-items-center bg-black/55 px-5">
+          <section className="relative w-full max-w-md rounded-[2rem] bg-white px-8 py-10 text-center shadow-[0_16px_48px_rgba(0,0,0,0.24)]">
+            <img src={rewardGem} alt="" className="mx-auto h-24 w-24" />
+            <div className="mx-auto mt-4 w-fit rounded-full bg-[#baf7d2] px-4 py-1 text-sm font-black text-[#0b6b2b]">{t("gemsAward", { value: activeTask.rewardGems + 2 })}</div>
+            <h2 className="mt-7 text-4xl font-black text-primary">{t("great")}</h2>
+            <p className="mt-2 font-semibold text-on-surface-variant">{t("foundBestMove")}</p>
+            <TactileButton className="mt-8 w-full" onClick={nextTask}>{t("nextPuzzle")}</TactileButton>
+            <button type="button" className="mt-5 font-black text-primary" onClick={() => setShowSuccess(false)}>{t("viewAnalysis")}</button>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
