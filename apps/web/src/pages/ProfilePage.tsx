@@ -26,7 +26,7 @@ export function ProfilePage() {
   async function logout() {
     await api.logout();
     clearAuthSession();
-    window.location.assign("/login");
+    window.location.assign("/profile");
   }
 
   return (
