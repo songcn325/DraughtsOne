@@ -165,8 +165,8 @@ function BoardArrow({ from, to, dashed = false }: { from: [number, number]; to: 
   return (
     <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" aria-hidden="true">
       <defs>
-        <marker id={`learn-arrow-${from.join("-")}-${to.join("-")}`} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 Z" fill="#44d48d" />
+        <marker id={`learn-arrow-${from.join("-")}-${to.join("-")}`} markerWidth="3.5" markerHeight="3.5" refX="3.1" refY="1.75" orient="auto">
+          <path d="M0,0 L3.5,1.75 L0,3.5 Z" fill="#44d48d" />
         </marker>
       </defs>
       <line
@@ -253,6 +253,8 @@ function TeachingBoard({ lessonId }: { lessonId: LessonId }) {
     return (
       <BoardGrid>
         <Target row={8} col={1} />
+        <Target row={2} col={7} />
+        <Target row={1} col={8} />
         <BoardArrow from={[8, 1]} to={[1, 8]} dashed />
         <Piece row={6} col={3} color="black" />
         <Piece row={3} col={6} color="black" />
