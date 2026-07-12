@@ -255,6 +255,7 @@ function TeachingBoard({ lessonId }: { lessonId: LessonId }) {
         <Target row={8} col={1} />
         <Target row={2} col={7} />
         <Target row={1} col={8} />
+        <Target row={0} col={9} />
         <BoardArrow from={[8, 1]} to={[1, 8]} dashed />
         <Piece row={6} col={3} color="black" />
         <Piece row={3} col={6} color="black" />
