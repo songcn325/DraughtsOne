@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { TactileButton } from "../components/TactileButton";
 import { useLanguage } from "../i18n";
-import classroomHero from "../assets/learning-training/classroom-hero.png";
-import trophyIcon from "../assets/learning-training/trophy-icon.png";
-import rewardGem from "../assets/learning-training/reward-gem.png";
+import classroomHero from "../assets/class/hero.png";
+import trophyIcon from "../assets/common/trophy.png";
+import rewardGem from "../assets/common/reward-gem.png";
 
 export function ClassroomPage() {
   const { t } = useLanguage();

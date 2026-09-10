@@ -4,15 +4,15 @@ import { api } from "../api/client";
 import { saveAuthSession } from "../auth/session";
 import { TactileButton } from "../components/TactileButton";
 import { useLanguage } from "../i18n";
-import logoWide from "../assets/login-logo-wide.png";
-import mascotWhite from "../assets/login-mascot-white.png";
-import mascotBlack from "../assets/login-mascot-black.png";
-import wechatIcon from "../assets/login-wechat.png";
-import qqIcon from "../assets/login-qq.png";
-import confettiOne from "../assets/login-confetti-1.png";
-import confettiTwo from "../assets/login-confetti-2.png";
-import confettiThree from "../assets/login-confetti-3.png";
-import confettiFour from "../assets/login-confetti-4.png";
+import logoWide from "../assets/login/logo-wide.png";
+import mascotWhite from "../assets/login/mascot-white.png";
+import mascotBlack from "../assets/login/mascot-black.png";
+import wechatIcon from "../assets/login/wechat.png";
+import qqIcon from "../assets/login/qq.png";
+import confettiOne from "../assets/login/confetti-1.png";
+import confettiTwo from "../assets/login/confetti-2.png";
+import confettiThree from "../assets/login/confetti-3.png";
+import confettiFour from "../assets/login/confetti-4.png";
 
 export function LoginPage() {
   const { t } = useLanguage();

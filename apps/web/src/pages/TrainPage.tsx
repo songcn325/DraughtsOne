@@ -6,9 +6,9 @@ import { mockTrainingTasks } from "../data/mockTrainingTasks";
 import { DraughtsBoard } from "../components/DraughtsBoard";
 import { TactileButton } from "../components/TactileButton";
 import { useLanguage, type TranslationKey } from "../i18n";
-import mascot from "../assets/learning-training/training-mascot.png";
-import rewardGem from "../assets/learning-training/reward-gem.png";
-import trophyIcon from "../assets/learning-training/trophy-icon.png";
+import mascot from "../assets/train/mascot.png";
+import rewardGem from "../assets/common/reward-gem.png";
+import trophyIcon from "../assets/common/trophy.png";
 
 const firstTask = mockTrainingTasks[0];
 
