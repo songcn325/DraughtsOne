@@ -70,6 +70,7 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
     ? language === "zh" ? "重做一次" : "Try again"
     : requiredMove
     ? language === "zh" ? "请在棋盘上走第一步" : "Make the first move on the board"
+    : lesson.id === 1 && isLast ? language === "zh" ? "我学会了，下一节内容" : "I learned it—next lesson"
     : isLast ? language === "zh" ? "我学会了" : "I learned it"
     : language === "zh" ? "继续" : "Continue";
 
@@ -83,6 +84,7 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
     board={<LearningBoard lesson={lesson.id} page={pageIndex} selected={selected} onSquareClick={requiredMove ? chooseSquare : undefined} />}
     primaryLabel={primaryLabel}
     primaryDisabled={requiredMove || sequencePlaying}
+    showSecondary={lesson.id !== 1}
     onBack={onClose}
     onPrimary={() => errorPage ? goTo(4) : advance()}
     onHint={() => requiredMove ? playAutomaticContinuation() : !isLast && goTo(pageIndex + 1)}
@@ -105,7 +107,7 @@ export function LearnPage() {
         <section className="mt-9 space-y-5"><div className="flex items-center gap-2"><img src={chapterStar} alt="" className="h-8 w-8" /><h2 className="text-[25px] font-black">{t("chapterTwoTitle")}</h2></div><div className="grid grid-cols-2 gap-5 lg:grid-cols-3">{chapterTwo.map((lesson) => <LessonTile key={lesson.id} lesson={lesson} completed={completed.includes(lesson.id)} onClick={() => setActiveLesson(lesson)} />)}</div></section>
         <section className="mt-9 space-y-5"><div className="flex items-center gap-2"><img src={lockIcon} alt="" className="h-8 w-8" /><h2 className="text-[25px] font-black">{t("chapterThreeTitle")}</h2></div><div className="flex min-h-[82px] items-center gap-4 rounded-[28px] border-2 border-[#e2e2e2] bg-white px-5 text-[#777]"><span className="grid h-12 w-12 place-items-center rounded-full bg-[#e5e5e5] font-black">…</span><div><p className="font-black">{t("advancedTactics")}</p><p className="text-sm font-bold">{t("advancedTacticsBody")}</p></div></div></section>
       </div>
-      {activeLesson && <LessonViewer lesson={activeLesson} onClose={() => setActiveLesson(undefined)} onComplete={() => { setCompleted((current) => current.includes(activeLesson.id) ? current : [...current, activeLesson.id]); setActiveLesson(undefined); }} />}
+      {activeLesson && <LessonViewer key={activeLesson.id} lesson={activeLesson} onClose={() => setActiveLesson(undefined)} onComplete={() => { setCompleted((current) => current.includes(activeLesson.id) ? current : [...current, activeLesson.id]); setActiveLesson(activeLesson.id === 1 ? learningLessons[1] : undefined); }} />}
     </>
   );
 }

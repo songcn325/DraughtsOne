@@ -34,6 +34,9 @@ function position([row, col]: Square) {
 }
 
 export function LearningBoard({ lesson, page, onSquareClick, selected }: { lesson: number; page: number; onSquareClick?: (square: Square) => void; selected?: Square }) {
+  if (lesson === 1) {
+    return <img src={numberedBoard} alt="International draughts board numbered 1 to 50" className="mx-auto block h-auto w-full max-w-[620px] object-contain drop-shadow-[0_8px_18px_rgba(45,55,55,.12)]" />;
+  }
   const scene = sceneFor(lesson, page);
   const pieces = scene.initial ? initialPieces() : scene.pieces;
   let number = 0;
@@ -59,3 +62,4 @@ export function LearningBoard({ lesson, page, onSquareClick, selected }: { lesso
     </div>
   );
 }
+import numberedBoard from "../../assets/learn/board-numbered.png";
