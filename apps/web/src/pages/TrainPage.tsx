@@ -1,4 +1,5 @@
 import { applyMove, generateLegalMoves } from "@draughtsone/draughts-engine";
+import type { LegalMove } from "@draughtsone/draughts-engine";
 import { useMemo, useState } from "react";
 import type { BoardPoint, GameState } from "@draughtsone/shared";
 import { mockTrainingTasks } from "../data/mockTrainingTasks";
@@ -25,6 +26,7 @@ export function TrainPage() {
   const [feedbackValues, setFeedbackValues] = useState<Record<string, string>>({ title: t("forcedCapture") });
   const [showHint, setShowHint] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [latestMove, setLatestMove] = useState<LegalMove>();
   const legalMoves = useMemo(() => generateLegalMoves(state), [state]);
   const selectedMoves = selected ? legalMoves.filter((move) => samePoint(move.from, selected)) : [];
   const taskTitle = (taskId: string) => t(taskId === "daily-2" ? "kingLaneControl" : "forcedCapture");
@@ -41,6 +43,7 @@ export function TrainPage() {
     setFeedbackValues({ title: t("forcedCapture") });
     setShowHint(true);
     setShowSuccess(false);
+    setLatestMove(undefined);
   }
 
   function resetTask() {
@@ -49,6 +52,7 @@ export function TrainPage() {
     setFeedbackKey("task");
     setFeedbackValues({ title: taskTitle(activeTask.id) });
     setShowSuccess(false);
+    setLatestMove(undefined);
   }
 
   function nextTask() {
@@ -80,6 +84,7 @@ export function TrainPage() {
       return;
     }
     setState(applyMove(state, move));
+    setLatestMove(move);
     setSelected(undefined);
     setFeedbackKey(move.captures.length > 0 ? "goodCapture" : "legalMove");
     setFeedbackValues({});
@@ -134,7 +139,7 @@ export function TrainPage() {
         )}
 
         <div className="rounded-[2rem] bg-surface-container-lowest p-4 shadow-[0_8px_24px_rgba(45,47,47,0.06)]">
-          <DraughtsBoard state={state} selected={selected} legalTargets={selectedMoves.map((move) => move.to)} onSquareClick={handleSquareClick} />
+          <DraughtsBoard state={state} selected={selected} legalTargets={selectedMoves.map((move) => move.to)} latestMove={latestMove} onSquareClick={handleSquareClick} />
         </div>
         <p className="rounded-[1.5rem] bg-surface-container-low p-4 font-bold text-on-surface-variant">
           {t(feedbackKey, feedbackKey === "task" ? { title: t("forcedCapture") } : feedbackValues)}
