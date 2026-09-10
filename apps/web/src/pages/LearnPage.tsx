@@ -77,14 +77,14 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
   return <LessonFrame
     language={language}
     lessonNumber={lesson.id}
-    title={lesson.title}
+    title={lesson.pages[pageIndex].title ?? lesson.title}
     page={pageIndex}
     pageCount={lesson.pages.length}
     message={lesson.pages[pageIndex].copy}
     board={<LearningBoard lesson={lesson.id} page={pageIndex} selected={selected} onSquareClick={requiredMove ? chooseSquare : undefined} />}
     primaryLabel={primaryLabel}
     primaryDisabled={requiredMove || sequencePlaying}
-    showSecondary={lesson.id !== 1}
+    showSecondary={lesson.id > 2}
     onBack={onClose}
     onPrimary={() => errorPage ? goTo(4) : advance()}
     onHint={() => requiredMove ? playAutomaticContinuation() : !isLast && goTo(pageIndex + 1)}

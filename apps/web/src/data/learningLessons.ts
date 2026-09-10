@@ -9,7 +9,7 @@ import victoryIcon from "../assets/learn/learn-duel-icon.png";
 import chapterStar from "../assets/learn/learn-chapter-star.png";
 
 export type Copy = { zh: string; en: string };
-export type LearningPage = { copy: Copy };
+export type LearningPage = { copy: Copy; title?: Copy };
 export type LearningLesson = { id: number; title: Copy; icon: string; pages: LearningPage[] };
 
 const c = (zh: string, en: string): Copy => ({ zh, en });
@@ -19,10 +19,10 @@ export const learningLessons: LearningLesson[] = [
   { id: 1, title: c("认识棋盘", "Know the board"), icon: boardIcon, pages: p(
     ["国际跳棋使用 10×10 棋盘，深色格子从左下角到右上角。棋盘标有数字 1 到 50。", "International draughts uses a 10×10 board. The dark squares run from lower left to upper right and are numbered 1 to 50."]
   ) },
-  { id: 2, title: c("认识棋子", "Know the pieces"), icon: pieceIcon, pages: p(
-    ["所有棋子都摆放在深色格子上。白棋位于 31 至 50 格，黑棋位于 1 至 20 格。", "All pieces are placed on dark squares. White starts on squares 31–50 and Black starts on squares 1–20."],
-    ["普通棋子称为兵。兵抵达对方底线后会升变为王棋，获得更强的移动能力。", "Ordinary pieces are called men. A man that reaches the opponent's back rank becomes a king with greater movement."]
-  ) },
+  { id: 2, title: c("认识棋子", "Know the pieces"), icon: pieceIcon, pages: [
+    { title: c("如何摆放棋子", "How to place the pieces"), copy: c("所有棋子都摆放在深色格子上。白棋位于 31 至 50 格，黑棋位于 1 至 20 格。", "All pieces are placed on dark squares. White starts on squares 31–50 and Black starts on squares 1–20.") },
+    { copy: c("普通棋子称为兵。兵抵达对方底线后会升变为王棋，获得更强的移动能力。", "Ordinary pieces are called men. A man that reaches the opponent's back rank becomes a king with greater movement.") }
+  ] },
   { id: 3, title: c("兵的走法", "Man movement"), icon: moveIcon, pages: p(
     ["轮到白方。兵应该向哪个方向移动？", "It is White's turn. Which direction should the man move?"],
     ["很好，你已经知道兵怎样移动了。现在帮助黑方走一步。", "Great—you know how a man moves. Now help Black make one move."],

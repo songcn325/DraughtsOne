@@ -1,3 +1,7 @@
+import numberedBoard from "../../assets/learn/board-numbered.png";
+import blackMan from "../../assets/learn/piece-black-man.png";
+import whiteMan from "../../assets/learn/piece-white-man.png";
+
 type Square = [number, number];
 type Piece = { at: Square; color: "white" | "black"; king?: boolean };
 type Arrow = { from: Square; to: Square };
@@ -29,37 +33,32 @@ function initialPieces(): Piece[] {
   return pieces;
 }
 
-function position([row, col]: Square) {
-  return { left: `${(col + 0.5) * 10}%`, top: `${(row + 0.5) * 10}%` };
+function numberedBoardPosition([row, col]: Square) {
+  return { left: `${8.17 + (col + 0.5) * 8.37}%`, top: `${6.28 + (row + 0.5) * 8.36}%` };
 }
 
-export function LearningBoard({ lesson, page, onSquareClick, selected }: { lesson: number; page: number; onSquareClick?: (square: Square) => void; selected?: Square }) {
-  if (lesson === 1) {
-    return <img src={numberedBoard} alt="International draughts board numbered 1 to 50" className="mx-auto block h-auto w-full max-w-[620px] object-contain drop-shadow-[0_8px_18px_rgba(45,55,55,.12)]" />;
-  }
-  const scene = sceneFor(lesson, page);
+function NumberedAssetBoard({ scene, onSquareClick, selected }: { scene: Scene; onSquareClick?: (square: Square) => void; selected?: Square }) {
   const pieces = scene.initial ? initialPieces() : scene.pieces;
-  let number = 0;
   return (
-    <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-2xl border-[8px] border-white bg-white shadow-[0_8px_25px_rgba(45,55,55,.12)]">
-      <div className="grid h-full grid-cols-10">
-        {Array.from({ length: 100 }, (_, index) => {
-          const row = Math.floor(index / 10);
-          const col = index % 10;
-          const dark = (row + col) % 2 === 1;
-          if (dark) number += 1;
-          const squareNumber = number;
-          const active = selected?.[0] === row && selected?.[1] === col;
-          return <button key={index} type="button" onClick={() => onSquareClick?.([row, col])} disabled={!onSquareClick} aria-label={`Square ${row + 1}, ${col + 1}`} className={`relative grid aspect-square place-items-center text-[10px] font-bold sm:text-xs ${dark ? "bg-[#d9dcda]" : "bg-[#fbfbfa]"} ${active ? "ring-4 ring-inset ring-[#49c58d]" : ""}`}>{scene.numbered && dark ? squareNumber : ""}</button>;
-        })}
-      </div>
-      {(scene.highlights ?? []).map((at, index) => <span key={`h-${index}`} className="pointer-events-none absolute h-[9%] w-[9%] -translate-x-1/2 -translate-y-1/2 rounded-md bg-[#74d5aa]/60 ring-2 ring-[#49c58d]" style={position(at)} />)}
+    // Keep the image's natural aspect ratio: the supplied board includes intentional outer framing,
+    // so forcing this wrapper to aspect-square would crop or distort it during future design updates.
+    <div className="relative mx-auto w-full max-w-[620px]">
+      <img src={numberedBoard} alt="International draughts board numbered 1 to 50" className="block h-auto w-full object-contain drop-shadow-[0_8px_18px_rgba(45,55,55,.12)]" />
+      {(scene.highlights ?? []).map((at, index) => <span key={`h-${index}`} className="pointer-events-none absolute w-[7%] -translate-x-1/2 -translate-y-1/2 rounded-md bg-[#74d5aa]/60 ring-2 ring-[#49c58d]" style={{ ...numberedBoardPosition(at), aspectRatio: "1" }} />)}
       <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" aria-hidden="true">
-        <defs><marker id="lesson-arrow" markerWidth="4" markerHeight="4" refX="3.5" refY="2" orient="auto"><path d="M0 0L4 2L0 4Z" fill="#43bf87" /></marker></defs>
-        {(scene.arrows ?? []).map((arrow, index) => <line key={index} x1={(arrow.from[1] + .5) * 10} y1={(arrow.from[0] + .5) * 10} x2={(arrow.to[1] + .5) * 10} y2={(arrow.to[0] + .5) * 10} stroke="#43bf87" strokeWidth="1.8" strokeLinecap="round" strokeDasharray="3 2" markerEnd="url(#lesson-arrow)" />)}
+        <defs><marker id="numbered-lesson-arrow" markerWidth="4" markerHeight="4" refX="3.5" refY="2" orient="auto"><path d="M0 0L4 2L0 4Z" fill="#43bf87" /></marker></defs>
+        {(scene.arrows ?? []).map((arrow, index) => <line key={index} x1={8.17 + (arrow.from[1] + .5) * 8.37} y1={6.28 + (arrow.from[0] + .5) * 8.36} x2={8.17 + (arrow.to[1] + .5) * 8.37} y2={6.28 + (arrow.to[0] + .5) * 8.36} stroke="#43bf87" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2.5 2" markerEnd="url(#numbered-lesson-arrow)" />)}
       </svg>
-      {pieces.map((piece, index) => <span key={`${piece.at.join("-")}-${index}`} className={`pointer-events-none absolute grid h-[8.2%] w-[8.2%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border shadow-md transition-all duration-500 ${piece.color === "black" ? "border-black bg-[#333]" : "border-[#e6e6e6] bg-white"}`} style={position(piece.at)}>{piece.king && <span className="material-symbols-outlined text-[80%] text-[#d2a900]">crown</span>}</span>)}
+      {pieces.map((piece, index) => piece.king
+        ? <span key={`${piece.at.join("-")}-${index}`} className="pointer-events-none absolute grid w-[6.5%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-[#e7e7e7] bg-white shadow-md" style={{ ...numberedBoardPosition(piece.at), aspectRatio: "1" }}><span className="material-symbols-outlined text-[clamp(10px,2vw,22px)] text-[#d2a000]">crown</span></span>
+        : <img key={`${piece.at.join("-")}-${index}`} src={piece.color === "black" ? blackMan : whiteMan} alt="" className="pointer-events-none absolute w-[10.5%] -translate-x-1/2 -translate-y-1/2" style={numberedBoardPosition(piece.at)} />
+      )}
+      {onSquareClick && <div className="absolute z-20 grid grid-cols-10" style={{ left: "8.17%", top: "6.28%", width: "83.7%", height: "83.6%" }}>{Array.from({ length: 100 }, (_, index) => { const row = Math.floor(index / 10); const col = index % 10; const active = selected?.[0] === row && selected?.[1] === col; return <button key={index} type="button" onClick={() => onSquareClick([row, col])} aria-label={`Square ${row + 1}, ${col + 1}`} className={active ? "ring-4 ring-inset ring-[#49c58d]" : ""} />; })}</div>}
     </div>
   );
 }
-import numberedBoard from "../../assets/learn/board-numbered.png";
+
+export function LearningBoard({ lesson, page, onSquareClick, selected }: { lesson: number; page: number; onSquareClick?: (square: Square) => void; selected?: Square }) {
+  const scene = sceneFor(lesson, page);
+  return <NumberedAssetBoard scene={scene} onSquareClick={onSquareClick} selected={selected} />;
+}

@@ -32,7 +32,7 @@ export function LessonFrame({ language, lessonNumber, title, page, pageCount, me
         </header>
 
         <section className="mt-4 grid grid-cols-[minmax(96px,30%)_1fr] items-center gap-[clamp(10px,3vw,24px)]">
-          <div className="text-center"><img src={guideMascot} alt="" className="mx-auto h-auto w-full max-w-[150px] object-contain" /><p className="-mt-1 text-[clamp(13px,2.5vw,18px)] font-black text-[#48bd89]">{language === "zh" ? "小德拉夫：" : "Draff:"}</p></div>
+          <div className="text-center"><img src={guideMascot} alt="" className="mx-auto h-auto w-full max-w-[150px] object-contain" /><p className="mt-2 translate-x-2 text-[clamp(13px,2.5vw,18px)] font-black text-[#48bd89]">{language === "zh" ? "小德拉夫：" : "Draff:"}</p></div>
           <div className="flex min-h-[clamp(118px,20vw,170px)] items-center rounded-[clamp(18px,3vw,28px)] border-2 border-[#e3e9ef] bg-white px-[clamp(14px,3vw,26px)] py-4 text-[clamp(14px,2.4vw,20px)] font-semibold leading-[1.65] text-[#455044] shadow-[0_7px_18px_rgba(52,64,76,.08)]">{text(message, language)}</div>
         </section>
 
