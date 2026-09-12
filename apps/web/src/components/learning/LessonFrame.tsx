@@ -32,11 +32,22 @@ export function LessonFrame({ language, lessonNumber, title, page, pageCount, me
         </header>
 
         <section className="mt-4 grid grid-cols-[minmax(96px,30%)_1fr] items-center gap-[clamp(10px,3vw,24px)]">
-          <div className="text-center"><img src={guideMascot} alt="" className="mx-auto h-auto w-full max-w-[150px] object-contain" /><p className="mt-2 translate-x-2 text-[clamp(13px,2.5vw,18px)] font-black text-[#48bd89]">{language === "zh" ? "小德拉夫：" : "Draff:"}</p></div>
+          <div className="flex flex-col items-center">
+            <img
+              src={guideMascot}
+              alt=""
+              className="h-auto w-full max-w-[150px] object-contain"
+            />
+            <p className="mt-2 text-center text-[clamp(13px,2.5vw,18px)] font-black text-[#48bd89]">
+              {language === "zh" ? "小德拉夫：" : "Draff:"}
+            </p>
+          </div>
           <div className="flex min-h-[clamp(118px,20vw,170px)] items-center rounded-[clamp(18px,3vw,28px)] border-2 border-[#e3e9ef] bg-white px-[clamp(14px,3vw,26px)] py-4 text-[clamp(14px,2.4vw,20px)] font-semibold leading-[1.65] text-[#455044] shadow-[0_7px_18px_rgba(52,64,76,.08)]">{text(message, language)}</div>
         </section>
 
-        <section className="mx-auto mt-5 w-full max-w-[620px] flex-1">{board}</section>
+        <section className="mx-auto mt-5 w-full max-w-[620px] shrink-0">
+          {board}
+        </section>
 
         <div className="mt-6 space-y-3">
           <button type="button" disabled={primaryDisabled} onClick={onPrimary} className="w-full rounded-full bg-[#4fbd8d] py-3.5 text-lg font-black text-white shadow-[0_7px_18px_rgba(79,189,141,.32)] active:translate-y-0.5 disabled:bg-[#b9d9ca]">{primaryLabel}</button>
