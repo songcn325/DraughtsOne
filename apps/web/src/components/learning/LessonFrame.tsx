@@ -50,7 +50,8 @@ export function LessonFrame({ language, lessonNumber, title, page, pageCount, me
     const languagePrefix = language === "zh" ? "zh" : "en";
     const voices = speech.getVoices();
     utterance.lang = preferredLanguage;
-    utterance.rate = 0.9;
+    // English sounds unnaturally stretched at the slower Chinese reading pace.
+    utterance.rate = language === "zh" ? 1 : 1.05;
     utterance.voice = voices.find((voice) => voice.lang.toLowerCase() === preferredLanguage.toLowerCase())
       ?? voices.find((voice) => voice.lang.toLowerCase().startsWith(languagePrefix))
       ?? null;
