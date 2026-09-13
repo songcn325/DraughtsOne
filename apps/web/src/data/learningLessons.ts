@@ -59,8 +59,8 @@ export const learningLessons: LearningLesson[] = [
   { id: 10, title: c("王的连吃", "King capture"), icon: lesson10Icon, pages: p(
     ["对方棋子出现在王棋的路线上！它身后有三个可落子的空格，帮助小万用白王吃掉它！", "An opposing piece is on the king's diagonal, with three empty landing squares behind it. Help White's king capture it!"],
     ["王棋同样可以连吃。帮助小万用白王连续吃掉这两个黑棋！", "Kings can also make multiple captures. Help White's king capture both black pieces in one sequence!"],
-    ["现在来做一道练习：帮助小万用白王连续吃掉四个黑棋！", "Now try an exercise: help White's king capture all four black pieces in one sequence!"],
-    ["小万和小德拉夫给你出了一道难题。这道题有两条不同的完整路线，请把它们都找出来！", "White and Draff have prepared a challenge. It has two different complete routes—find them both!"]
+    ["现在来做一道练习：这道题有三条不同的完整连吃路线，请帮助小万先找出其中一条！", "Now try an exercise: this position has three different complete capture routes. Help White find one of them!"],
+    ["棋盘已复原。这道题共有三条不同的完整路线，请找出一条与上一页不同的路线！", "The board has reset. This position has three complete routes; find one that is different from the route you used on the previous page!"]
   ) },
   { id: 11, title: c("有吃必吃", "Capture is compulsory"), icon: lesson11Icon, pages: p(
     ["现在轮到小万执白棋走棋，小德拉夫执黑棋。白棋有子可吃，所以小万必须吃掉黑棋，不能移动其他棋子。请你帮助小万找到这颗白旗并执行吃子", "Wan is playing White and Draff is playing Black. White has a capture, so Wan must capture instead of moving another piece. Help Wan find the correct white piece and make the capture."],

@@ -32,6 +32,40 @@ type Lesson10Exercise = {
   routes: Lesson10Move[][];
 };
 
+const lesson10ChallengeStart: Square = [5, 0];
+const lesson10ChallengeBlacks: Square[] = [
+  [3, 2], [3, 4], [3, 6], [3, 8], [6, 3], [8, 3], [8, 5],
+];
+const lesson10ChallengeRoutes: Lesson10Move[][] = [
+  [
+    { to: [2, 3], capture: [3, 2] },
+    { to: [4, 5], capture: [3, 4] },
+    { to: [7, 2], capture: [6, 3] },
+    { to: [9, 4], capture: [8, 3] },
+    { to: [4, 9], capture: [8, 5] },
+    { to: [2, 7], capture: [3, 8] },
+    { to: [4, 5], capture: [3, 6] },
+  ],
+  [
+    { to: [9, 4], capture: [8, 3] },
+    { to: [4, 9], capture: [8, 5] },
+    { to: [2, 7], capture: [3, 8] },
+    { to: [4, 5], capture: [3, 6] },
+    { to: [2, 3], capture: [3, 4] },
+    { to: [4, 1], capture: [3, 2] },
+    { to: [7, 4], capture: [6, 3] },
+  ],
+  [
+    { to: [2, 3], capture: [3, 2] },
+    { to: [6, 7], capture: [3, 4] },
+    { to: [9, 4], capture: [8, 5] },
+    { to: [7, 2], capture: [8, 3] },
+    { to: [4, 5], capture: [6, 3] },
+    { to: [2, 7], capture: [3, 6] },
+    { to: [4, 9], capture: [3, 8] },
+  ],
+];
+
 const lesson10Exercises: Lesson10Exercise[] = [
   {
     start: [4, 5],
@@ -49,38 +83,14 @@ const lesson10Exercises: Lesson10Exercise[] = [
     ]],
   },
   {
-    start: [5, 0],
-    blacks: [[3, 2], [3, 4], [3, 6], [3, 8]],
-    routes: [[
-      { to: [2, 3], capture: [3, 2] },
-      { to: [4, 5], capture: [3, 4] },
-      { to: [2, 7], capture: [3, 6] },
-      { to: [4, 9], capture: [3, 8] },
-    ]],
+    start: lesson10ChallengeStart,
+    blacks: lesson10ChallengeBlacks,
+    routes: lesson10ChallengeRoutes,
   },
   {
-    start: [5, 0],
-    blacks: [[3, 2], [3, 4], [3, 6], [3, 8], [6, 3], [8, 3], [8, 5]],
-    routes: [
-      [
-        { to: [2, 3], capture: [3, 2] },
-        { to: [4, 5], capture: [3, 4] },
-        { to: [7, 2], capture: [6, 3] },
-        { to: [9, 4], capture: [8, 3] },
-        { to: [4, 9], capture: [8, 5] },
-        { to: [2, 7], capture: [3, 8] },
-        { to: [4, 5], capture: [3, 6] },
-      ],
-      [
-        { to: [9, 4], capture: [8, 3] },
-        { to: [4, 9], capture: [8, 5] },
-        { to: [2, 7], capture: [3, 8] },
-        { to: [4, 5], capture: [3, 6] },
-        { to: [2, 3], capture: [3, 4] },
-        { to: [4, 1], capture: [3, 2] },
-        { to: [7, 4], capture: [6, 3] },
-      ],
-    ],
+    start: lesson10ChallengeStart,
+    blacks: lesson10ChallengeBlacks,
+    routes: lesson10ChallengeRoutes,
   },
 ];
 
@@ -377,8 +387,8 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
   const [lesson10Blacks, setLesson10Blacks] = useState<Square[]>(lesson10Exercises[0].blacks);
   const [lesson10Step, setLesson10Step] = useState(0);
   const [lesson10RouteCandidates, setLesson10RouteCandidates] = useState<number[]>([0, 1, 2]);
-  const [lesson10FoundRoutes, setLesson10FoundRoutes] = useState<number[]>([]);
-  const [lesson10Result, setLesson10Result] = useState<"ready" | "one-route" | "correct" | "wrong" | "hint">("ready");
+  const [lesson10PreviousRoute, setLesson10PreviousRoute] = useState<number>();
+  const [lesson10Result, setLesson10Result] = useState<"ready" | "correct" | "wrong" | "repeated-route" | "hint">("ready");
   const [lesson10Animating, setLesson10Animating] = useState(false);
   const [lesson10Trail, setLesson10Trail] = useState<Square[]>();
   const [lesson11Whites, setLesson11Whites] = useState<Lesson11Piece[]>(lesson11Setups[0].whites);
@@ -467,7 +477,7 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
     setLesson10Blacks(lesson10Exercise.blacks);
     setLesson10Step(0);
     setLesson10RouteCandidates(lesson10Exercise.routes.map((_, index) => index));
-    setLesson10FoundRoutes([]);
+    if (pageIndex < 2) setLesson10PreviousRoute(undefined);
     setLesson10Result("ready");
     setLesson10Animating(false);
     setLesson10Trail(undefined);
@@ -1134,12 +1144,10 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
         setSelected(undefined);
         setLesson8Route(undefined);
         setLesson8Result(route);
-      } else if (route === "wrong") {
-        // The capture must continue, so the back rank is not a legal stopping point yet.
-        setSelected(undefined);
-        setLesson8Route(undefined);
-        setLesson8Result("wrong");
       } else {
+        // Even the non-promoting route is a compulsory two-piece capture. Let
+        // the learner finish it before explaining why passing over the back
+        // rank does not crown the man.
         setSelected(move.to);
       }
     }, 1050);
@@ -1189,8 +1197,7 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
     if (
       !lesson10Interactive ||
       lesson10Animating ||
-      lesson10Result === "correct" ||
-      lesson10Result === "wrong"
+      lesson10Result === "correct"
     ) return;
 
     if (!selected) {
@@ -1206,7 +1213,9 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
     });
 
     if (matchingRoutes.length === 0) {
-      setSelected(undefined);
+      // Keep the current position and partial route intact. The learner can
+      // correct only this landing choice instead of replaying the whole chain.
+      setSelected(lesson10White);
       setLesson10Result("wrong");
       return;
     }
@@ -1233,24 +1242,16 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
         setSelected(undefined);
         setLesson10Animating(false);
 
-        if (pageIndex === 3) {
-          const foundRoutes = Array.from(new Set([...lesson10FoundRoutes, completedRoute]));
-          setLesson10FoundRoutes(foundRoutes);
-
-          if (foundRoutes.length < lesson10Exercise.routes.length) {
-            setLesson10White(lesson10Exercise.start);
-            setLesson10Blacks(lesson10Exercise.blacks);
-            setLesson10Step(0);
-            setLesson10Trail(undefined);
-            setLesson10RouteCandidates(
-              lesson10Exercise.routes
-                .map((_, index) => index)
-                .filter((index) => !foundRoutes.includes(index))
-            );
-            setLesson10Result("one-route");
-          } else {
-            setLesson10Result("correct");
-          }
+        if (pageIndex === 2) {
+          setLesson10PreviousRoute(completedRoute);
+          setLesson10Result("correct");
+        } else if (pageIndex === 3 && completedRoute === lesson10PreviousRoute) {
+          setLesson10White(lesson10Exercise.start);
+          setLesson10Blacks(lesson10Exercise.blacks);
+          setLesson10Step(0);
+          setLesson10Trail(undefined);
+          setLesson10RouteCandidates(lesson10Exercise.routes.map((_, index) => index));
+          setLesson10Result("repeated-route");
         } else {
           setLesson10Result("correct");
         }
@@ -1264,16 +1265,12 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
   }
 
   function resetLesson10() {
-    const availableRoutes = lesson10Exercise.routes
-      .map((_, index) => index)
-      .filter((index) => pageIndex !== 3 || !lesson10FoundRoutes.includes(index));
-
     setSelected(undefined);
     setLesson10White(lesson10Exercise.start);
     setLesson10Blacks(lesson10Exercise.blacks);
     setLesson10Step(0);
-    setLesson10RouteCandidates(availableRoutes);
-    setLesson10Result(lesson10FoundRoutes.length > 0 ? "one-route" : "ready");
+    setLesson10RouteCandidates(lesson10Exercise.routes.map((_, index) => index));
+    setLesson10Result("ready");
     setLesson10Animating(false);
     setLesson10Trail(undefined);
   }
@@ -1282,7 +1279,7 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
     if (lesson10Animating || lesson10Result === "correct") return;
 
     const availableRoute = lesson10Exercise.routes.findIndex(
-      (_, index) => pageIndex !== 3 || !lesson10FoundRoutes.includes(index)
+      (_, index) => pageIndex !== 3 || index !== lesson10PreviousRoute
     );
     const routeIndex = availableRoute < 0 ? 0 : availableRoute;
     const route = lesson10Exercise.routes[routeIndex];
@@ -1313,11 +1310,9 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
       setLesson10Blacks(lesson10Exercise.blacks);
       setLesson10Step(0);
       setLesson10RouteCandidates(
-        lesson10Exercise.routes
-          .map((_, index) => index)
-          .filter((index) => pageIndex !== 3 || !lesson10FoundRoutes.includes(index))
+        lesson10Exercise.routes.map((_, index) => index)
       );
-      setLesson10Result(lesson10FoundRoutes.length > 0 ? "one-route" : "ready");
+      setLesson10Result("ready");
       setLesson10Animating(false);
       setLesson10Trail(undefined);
     }, hintDuration);
@@ -1837,7 +1832,7 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
     }
 
     window.setTimeout(() => {
-      setLesson14Result(isCorrectTarget ? "correct" : "wrong");
+      setLesson14Result("correct");
       setLesson14Animating(false);
     }, 1050);
   }
@@ -1996,22 +1991,22 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
         }
       : pageIndex === 2
       ? {
-          zh: "好久没有见过这么聪明的棋手了，再来一道思考题！",
-          en: "What a clever player! Try one more challenge.",
+          zh: "非常棒！你成功找出了一条完整路线。下一页请从另外两条路线中选择一条不同的路线！",
+          en: "Excellent! You found one complete route. On the next page, choose either of the other two routes.",
         }
       : {
-          zh: "真厉害！你找出了两条不同的完整路线。小万和小德拉夫好崇拜你！继续学习成为国际跳棋高手吧！",
-          en: "Amazing! You found both complete routes. Wan and Draff are impressed—keep learning to become a draughts master!",
+          zh: "真厉害！你又找出了一条不同的完整路线。小万和小德拉夫好崇拜你！继续学习成为国际跳棋高手吧！",
+          en: "Amazing! You found another complete route. Wan and Draff are impressed—keep learning to become a draughts master!",
         }
-    : lesson10Result === "one-route"
+    : lesson10Result === "repeated-route"
     ? {
-        zh: "非常棒！你成功找出了一条路线。棋盘已复原，请再找出另一条不同的完整路线！",
-        en: "Excellent! You found one route. The board has reset—now find the other complete route!",
+        zh: "这条完整路线你在上一页已经使用过了。棋盘已复原，请尝试另外两条路线中的一条！",
+        en: "You already used this complete route on the previous page. The board has reset; try either of the other two routes.",
       }
     : lesson10Result === "wrong"
     ? {
-        zh: "这一步不能完成本题要求的连续吃子。请重做一次，或点击“获得提示”查看正确路线。",
-        en: "That move cannot complete the required capture sequence. Reset and try again, or use the hint to see a valid route.",
+        zh: "这个落点不能延续当前的完整连吃路线。棋盘会保留你已经完成的步骤，请直接从当前位置选择另一个落点，或点击“获得提示”查看路线。",
+        en: "That landing cannot continue a complete capture route. Your completed steps have been preserved; choose another landing from the current position, or use the hint.",
       }
     : lesson10Result === "hint"
     ? pageIndex === 0
@@ -2021,8 +2016,8 @@ function LessonViewer({ lesson, onClose, onComplete }: { lesson: LearningLesson;
         }
       : pageIndex === 3
       ? {
-          zh: "提示：跟随演示完成一条路线；本题还需要你找出另一条不同的完整连吃路线。",
-          en: "Hint: follow the demonstration for one route; this exercise also asks you to find the other complete capture route.",
+          zh: "提示：演示会选择一条与你上一页不同的完整路线。这个棋局共有三条路线。",
+          en: "Hint: the demonstration uses a complete route different from the one you chose on the previous page. This position has three routes.",
         }
       : {
           zh: "提示：每次落下后，继续观察同一枚王棋能够跳过哪一枚黑棋，并选择其后方的空格。",
