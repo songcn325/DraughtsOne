@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import guideMascot from "../../assets/learn/guide-mascot.png";
 import type { Language } from "../../i18n";
 import type { Copy } from "../../data/learningLessons";
@@ -22,6 +22,44 @@ export function LessonFrame({ language, lessonNumber, title, page, pageCount, me
   onRetry: () => void;
   onToggleLanguage: () => void;
 }) {
+  const messageText = text(message, language);
+  const speechSupported = typeof window !== "undefined" && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  useEffect(() => {
+    setIsSpeaking(false);
+    if (speechSupported) window.speechSynthesis.cancel();
+
+    return () => {
+      if (speechSupported) window.speechSynthesis.cancel();
+    };
+  }, [language, messageText, page, speechSupported]);
+
+  const toggleSpeech = () => {
+    if (!speechSupported) return;
+
+    const speech = window.speechSynthesis;
+    if (isSpeaking || speech.speaking) {
+      speech.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(messageText);
+    const preferredLanguage = language === "zh" ? "zh-CN" : "en-US";
+    const languagePrefix = language === "zh" ? "zh" : "en";
+    const voices = speech.getVoices();
+    utterance.lang = preferredLanguage;
+    utterance.rate = 0.9;
+    utterance.voice = voices.find((voice) => voice.lang.toLowerCase() === preferredLanguage.toLowerCase())
+      ?? voices.find((voice) => voice.lang.toLowerCase().startsWith(languagePrefix))
+      ?? null;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    setIsSpeaking(true);
+    speech.speak(utterance);
+  };
+
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-[#f2f2f2]" role="dialog" aria-modal="true" aria-label={text(title, language)}>
       <main className="mx-auto flex min-h-dvh w-full max-w-[720px] flex-col bg-[#fbfaf6] px-[clamp(16px,5vw,42px)] pb-8 pt-4 text-[#293444] shadow-[0_0_40px_rgba(42,54,66,.12)]">
@@ -42,7 +80,21 @@ export function LessonFrame({ language, lessonNumber, title, page, pageCount, me
               {language === "zh" ? "小德拉夫：" : "Draff:"}
             </p>
           </div>
-          <div className="flex min-h-[clamp(118px,20vw,170px)] items-center rounded-[clamp(18px,3vw,28px)] border-2 border-[#e3e9ef] bg-white px-[clamp(14px,3vw,26px)] py-4 text-[clamp(14px,2.4vw,20px)] font-semibold leading-[1.65] text-[#455044] shadow-[0_7px_18px_rgba(52,64,76,.08)]">{text(message, language)}</div>
+          <div className="flex min-h-[clamp(118px,20vw,170px)] flex-col justify-center rounded-[clamp(18px,3vw,28px)] border-2 border-[#e3e9ef] bg-white px-[clamp(14px,3vw,26px)] py-4 text-[clamp(14px,2.4vw,20px)] font-semibold leading-[1.65] text-[#455044] shadow-[0_7px_18px_rgba(52,64,76,.08)]">
+            <p>{messageText}</p>
+            {speechSupported && (
+              <button
+                type="button"
+                onClick={toggleSpeech}
+                aria-label={isSpeaking ? (language === "zh" ? "停止朗读" : "Stop reading") : (language === "zh" ? "朗读文字" : "Read text aloud")}
+                aria-pressed={isSpeaking}
+                className="mt-3 inline-flex min-h-10 self-end items-center gap-1.5 rounded-full bg-[#e5f7ef] px-3 py-1.5 text-[clamp(12px,2vw,14px)] font-black leading-none text-[#25845f] transition-colors hover:bg-[#d5f1e5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25845f]"
+              >
+                <span className="material-symbols-outlined text-[21px]" aria-hidden="true">{isSpeaking ? "stop_circle" : "volume_up"}</span>
+                <span>{isSpeaking ? (language === "zh" ? "停止" : "Stop") : (language === "zh" ? "听一听" : "Listen")}</span>
+              </button>
+            )}
+          </div>
         </section>
 
         <section className="mx-auto mt-5 w-full max-w-[620px] shrink-0">
