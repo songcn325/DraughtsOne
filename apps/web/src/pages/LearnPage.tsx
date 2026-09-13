@@ -57,12 +57,12 @@ const lesson10ChallengeRoutes: Lesson10Move[][] = [
   ],
   [
     { to: [2, 3], capture: [3, 2] },
-    { to: [6, 7], capture: [3, 4] },
-    { to: [9, 4], capture: [8, 5] },
-    { to: [7, 2], capture: [8, 3] },
-    { to: [4, 5], capture: [6, 3] },
+    { to: [4, 5], capture: [3, 4] },
     { to: [2, 7], capture: [3, 6] },
     { to: [4, 9], capture: [3, 8] },
+    { to: [9, 4], capture: [8, 5] },
+    { to: [7, 2], capture: [8, 3] },
+    { to: [5, 4], capture: [6, 3] },
   ],
 ];
 
