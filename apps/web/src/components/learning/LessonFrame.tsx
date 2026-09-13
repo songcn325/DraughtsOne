@@ -5,6 +5,29 @@ import type { Copy } from "../../data/learningLessons";
 
 function text(copy: Copy, language: Language) { return copy[language]; }
 
+function selectBestVoice(voices: SpeechSynthesisVoice[], language: Language) {
+  const preferredLanguage = language === "zh" ? "zh-CN" : "en-US";
+  const languagePrefix = language === "zh" ? "zh" : "en";
+  const preferredNames = language === "zh"
+    ? /ting|meijia|sinji|xiaoxiao|xiaoyi|yunxi|yunyang|huihui/i
+    : /samantha|ava|allison|daniel|serena|aria|jenny|guy/i;
+
+  const score = (voice: SpeechSynthesisVoice) => {
+    const identity = `${voice.name} ${voice.voiceURI}`;
+    let value = voice.lang.toLowerCase() === preferredLanguage.toLowerCase() ? 40 : 0;
+    if (/natural|neural|premium|enhanced|online|google|microsoft|siri/i.test(identity)) value += 100;
+    if (preferredNames.test(identity)) value += 30;
+    if (!voice.localService) value += 15;
+    if (voice.default) value += 5;
+    if (/compact|espeak|festival|novelty/i.test(identity)) value -= 100;
+    return value;
+  };
+
+  return voices
+    .filter((voice) => voice.lang.toLowerCase().startsWith(languagePrefix))
+    .sort((left, right) => score(right) - score(left))[0] ?? null;
+}
+
 export function LessonFrame({ language, lessonNumber, title, page, pageCount, message, board, primaryLabel, primaryDisabled, showSecondary = true, onBack, onPrimary, onHint, onRetry, onToggleLanguage }: {
   language: Language;
   lessonNumber: number;
@@ -25,6 +48,17 @@ export function LessonFrame({ language, lessonNumber, title, page, pageCount, me
   const messageText = text(message, language);
   const speechSupported = typeof window !== "undefined" && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  useEffect(() => {
+    if (!speechSupported) return;
+
+    const speech = window.speechSynthesis;
+    const loadVoices = () => setAvailableVoices(speech.getVoices());
+    loadVoices();
+    speech.addEventListener("voiceschanged", loadVoices);
+    return () => speech.removeEventListener("voiceschanged", loadVoices);
+  }, [speechSupported]);
 
   useEffect(() => {
     setIsSpeaking(false);
@@ -47,14 +81,11 @@ export function LessonFrame({ language, lessonNumber, title, page, pageCount, me
 
     const utterance = new SpeechSynthesisUtterance(messageText);
     const preferredLanguage = language === "zh" ? "zh-CN" : "en-US";
-    const languagePrefix = language === "zh" ? "zh" : "en";
-    const voices = speech.getVoices();
     utterance.lang = preferredLanguage;
-    // English sounds unnaturally stretched at the slower Chinese reading pace.
-    utterance.rate = language === "zh" ? 1 : 1.05;
-    utterance.voice = voices.find((voice) => voice.lang.toLowerCase() === preferredLanguage.toLowerCase())
-      ?? voices.find((voice) => voice.lang.toLowerCase().startsWith(languagePrefix))
-      ?? null;
+    utterance.rate = 1;
+    // Prefer neural/natural/enhanced voices when the device exposes them instead of
+    // relying on the first locale match, which is often a basic synthetic voice.
+    utterance.voice = selectBestVoice(availableVoices.length > 0 ? availableVoices : speech.getVoices(), language);
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
     setIsSpeaking(true);
